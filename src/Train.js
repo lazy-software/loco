@@ -1,20 +1,32 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 export class Train {
   constructor(trackManager) {
     this.trackManager = trackManager;
     this.mesh = new THREE.Group();
 
-    // The locomotive placeholder
-    const geometry = new THREE.BoxGeometry(4, 6, 15);
-    const material = new THREE.MeshStandardMaterial({ 
-      color: 0xef4444,
-      roughness: 0.2,
-      metalness: 0.1 
-    }); // red train
-    const box = new THREE.Mesh(geometry, material);
-    box.position.y = 3; // lift above track assuming y=0 is bottom
-    this.mesh.add(box);
+    const loader = new GLTFLoader();
+    loader.load('/train-electric-subway-a.glb', (gltf) => {
+      const model = gltf.scene;
+      
+      model.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      
+      // Scale and lift slightly onto the rails
+      model.scale.set(1.9, 1.9, 1.9);
+      model.position.y = 0.2; 
+      
+      // Remove the previous 90-degree twist; Kenney's subway car aligns cleanly to 0 or 180 degrees.
+      // If it's driving backwards, we would just change this to Math.PI
+      model.rotation.y = 0;
+
+      this.mesh.add(model);
+    });
 
     // Physics state
     this.t = 0; // position along the curve (0 to 1)
@@ -78,7 +90,10 @@ export class Train {
     if (this.t > 1) this.t -= 1;
     if (this.t < 0) this.t += 1;
     // Bogie Math: Calculate front and rear wheel positions to accurately model curve overhang
-    const dt = 7.5 / this.trackLength; // Half of train length (15)
+    // If the back wheels fall to the inside of the curve, it means this 'dt' value is too large 
+    // (the math chord is cutting too deep into the corner). We decreased it to 2.8.
+    // Feel free to tweak 2.8 until it permanently pins the wheels exactly over the rails!
+    const dt = 2.8 / this.trackLength; 
     let frontT = this.t + dt;
     let rearT = this.t - dt;
 
