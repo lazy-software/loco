@@ -24,7 +24,7 @@ export class TrackManager {
   }
 
   createTrackMesh() {
-    const gauge = 1.0; 
+    const gauge = 0.75; // Narrowed rails slightly to perfectly hug the wheels of the subway model
     
     // Custom curve class to generate parallel rails without the Three.js Extrude rotation bug
     class OffsetCurve extends THREE.Curve {
@@ -82,6 +82,15 @@ export class TrackManager {
       instancedTies.setMatrixAt(i, dummy.matrix);
     }
     this.mesh.add(instancedTies);
+
+    // 3. Ballast Base (Gravel bed via perfectly smooth flattened TubeGeometry)
+    // We flatten it on the Y axis relative to the world, which works flawlessly for rails on flat ground!
+    const ballastGeo = new THREE.TubeGeometry(this.curve, 400, 1.8, 12, true);
+    const ballastMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 1.0, metalness: 0.0 });
+    const ballastMesh = new THREE.Mesh(ballastGeo, ballastMat);
+    ballastMesh.scale.y = 0.05; 
+    ballastMesh.position.y = 0.02; // Lift slightly to prevent ground z-fighting
+    this.mesh.add(ballastMesh);
   }
 
   // Helper method to get a point at normalized value t (0.0 to 1.0)
@@ -91,5 +100,40 @@ export class TrackManager {
 
   getTangentAt(t) {
     return this.curve.getTangentAt(t);
+  }
+
+  buildInstancedTrack(geometry, material) {
+    // Remove old procedural tracks
+    while(this.mesh.children.length > 0) { 
+        this.mesh.remove(this.mesh.children[0]); 
+    }
+
+    const trackLength = this.curve.getLength();
+    // Kenney trains and tracks are matching scale. We scaled the train 1.9x in Train.js.
+    // A spline segment is 1 unit long locally, so 1.9x scale = 1.9 units long globally.
+    const scale = 1.9;
+    const segmentLength = 1.0 * scale;
+    const count = Math.ceil(trackLength / segmentLength);
+    const instancedTrack = new THREE.InstancedMesh(geometry, material, count);
+    
+    instancedTrack.castShadow = true;
+    instancedTrack.receiveShadow = true;
+
+    const dummy = new THREE.Object3D();
+    for (let i = 0; i < count; i++) {
+        let t = (i * segmentLength) / trackLength;
+        if (t > 1.0) t -= 1.0; // clamp to loop visually seamlessly if remainder exists
+
+        const pos = this.curve.getPointAt(t);
+        const tangent = this.curve.getTangentAt(t).normalize();
+        
+        dummy.position.copy(pos);
+        dummy.lookAt(pos.clone().add(tangent));
+        dummy.scale.set(scale, scale, scale);
+        dummy.updateMatrix();
+        instancedTrack.setMatrixAt(i, dummy.matrix);
+    }
+    
+    this.mesh.add(instancedTrack);
   }
 }
