@@ -1,11 +1,13 @@
 export class UI {
-  constructor(train) {
+  constructor(train, audioManager) {
     this.train = train;
+    this.audioManager = audioManager;
     
     this.throttleElement = document.getElementById('throttle');
     this.speedOdometer = document.getElementById('speedometer');
 
     this.throttleElement.addEventListener('input', (e) => {
+      if (this.audioManager) this.audioManager.init(); 
       this.train.setThrottle(parseFloat(e.target.value));
     });
 

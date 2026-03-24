@@ -51,6 +51,7 @@ export class Train {
     this.trackLength = this.trackManager.curve.getLength();
     this.t = 0; // position of the locomotive
     this.velocity = 0;
+    this.odometer = 0;
 
     // Engine characteristics (Heavier mass to account for 3 cars now)
     this.mass = 150000; // 150 tons
@@ -98,6 +99,9 @@ export class Train {
 
     const acceleration = force / this.mass;
     this.velocity += acceleration * delta;
+
+    // Track full life travel distance (independent of splines/loops) for accurate audio clacks
+    this.odometer += Math.abs(this.velocity) * delta;
 
     const tDelta = (this.velocity * delta) / this.trackLength;
     this.t += tDelta;

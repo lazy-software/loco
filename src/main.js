@@ -4,6 +4,7 @@ import { TrackManager } from './TrackManager.js';
 import { Train } from './Train.js';
 import { UI } from './ui.js';
 import { EnvironmentManager } from './EnvironmentManager.js';
+import { AudioManager } from './AudioManager.js';
 
 // Setup basic scene
 const canvas = document.querySelector('#game-canvas');
@@ -45,8 +46,10 @@ envManager.loadAndScatter();
 const train = new Train(trackManager);
 scene.add(train.mesh);
 
+const audioManager = new AudioManager(train);
+
 // UI
-const ui = new UI(train);
+const ui = new UI(train, audioManager);
 
 // Resize handler
 window.addEventListener('resize', () => {
@@ -65,6 +68,7 @@ function animate() {
 
   train.update(delta);
   ui.update();
+  audioManager.update();
 
   // Chase Camera Update
   // Use the Locomotive (the first car) as the camera target
