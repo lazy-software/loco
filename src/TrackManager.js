@@ -4,20 +4,44 @@ export class TrackManager {
   constructor() {
     this.mesh = new THREE.Group();
     
-    // Define some points for a simple track loop
-    this.points = [
-      new THREE.Vector3(0, 0, 10),
-      new THREE.Vector3(20, 0, 20),
-      new THREE.Vector3(40, 0, 0),
-      new THREE.Vector3(20, 0, -20),
-      new THREE.Vector3(0, 0, -10),
-      new THREE.Vector3(-20, 0, -20),
-      new THREE.Vector3(-40, 0, 0),
-      new THREE.Vector3(-20, 0, 20)
-    ];
+    // Custom geometric curve to absolutely guarantee flawless tangency and zero track wiggle
+    class CapsuleCurve extends THREE.Curve {
+      constructor(straightLength = 200, radius = 20) {
+        super();
+        this.sl = straightLength;
+        this.r = radius;
+        this.arcL = Math.PI * this.r;
+        this.circumference = this.sl * 2 + this.arcL * 2;
+      }
+      
+      getPoint(t, optionalTarget = new THREE.Vector3()) {
+        let d = (t % 1.0) * this.circumference;
+        if (d < 0) d += this.circumference;
+        const sl2 = this.sl / 2;
+        
+        if (d <= sl2) return optionalTarget.set(this.r, 0, d);
+        
+        let distIn = d - sl2;
+        if (distIn <= this.arcL) {
+          const angle = (distIn / this.arcL) * Math.PI;
+          return optionalTarget.set(Math.cos(angle) * this.r, 0, sl2 + Math.sin(angle) * this.r);
+        }
+        
+        distIn -= this.arcL;
+        if (distIn <= this.sl) return optionalTarget.set(-this.r, 0, sl2 - distIn);
+        
+        distIn -= this.sl;
+        if (distIn <= this.arcL) {
+          const angle = Math.PI + (distIn / this.arcL) * Math.PI;
+          return optionalTarget.set(Math.cos(angle) * this.r, 0, -sl2 + Math.sin(angle) * this.r);
+        }
+        
+        distIn -= this.arcL;
+        return optionalTarget.set(this.r, 0, -sl2 + distIn);
+      }
+    }
 
-    // Create a smooth 3D spline curve from the points
-    this.curve = new THREE.CatmullRomCurve3(this.points, true, 'catmullrom', 0.5);
+    this.curve = new CapsuleCurve(200, 20);
     
     // Visualize the track
     this.createTrackMesh();

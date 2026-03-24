@@ -4,6 +4,7 @@ import { Train } from './Train.js';
 import { UI } from './ui.js';
 import { EnvironmentManager } from './EnvironmentManager.js';
 import { AudioManager } from './AudioManager.js';
+import { StationManager } from './StationManager.js';
 
 // Setup basic scene
 const canvas = document.querySelector('#game-canvas');
@@ -37,6 +38,10 @@ scene.add(ground);
 // Track & Train
 const trackManager = new TrackManager();
 scene.add(trackManager.mesh);
+
+// Stations
+const stationManager = new StationManager(scene, trackManager);
+stationManager.buildStations();
 
 // Environment Clutter
 const envManager = new EnvironmentManager(scene, trackManager);
