@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { TrackManager } from './TrackManager.js';
 import { Train } from './Train.js';
 import { UI } from './ui.js';

@@ -101,39 +101,4 @@ export class TrackManager {
   getTangentAt(t) {
     return this.curve.getTangentAt(t);
   }
-
-  buildInstancedTrack(geometry, material) {
-    // Remove old procedural tracks
-    while(this.mesh.children.length > 0) { 
-        this.mesh.remove(this.mesh.children[0]); 
-    }
-
-    const trackLength = this.curve.getLength();
-    // Kenney trains and tracks are matching scale. We scaled the train 1.9x in Train.js.
-    // A spline segment is 1 unit long locally, so 1.9x scale = 1.9 units long globally.
-    const scale = 1.9;
-    const segmentLength = 1.0 * scale;
-    const count = Math.ceil(trackLength / segmentLength);
-    const instancedTrack = new THREE.InstancedMesh(geometry, material, count);
-    
-    instancedTrack.castShadow = true;
-    instancedTrack.receiveShadow = true;
-
-    const dummy = new THREE.Object3D();
-    for (let i = 0; i < count; i++) {
-        let t = (i * segmentLength) / trackLength;
-        if (t > 1.0) t -= 1.0; // clamp to loop visually seamlessly if remainder exists
-
-        const pos = this.curve.getPointAt(t);
-        const tangent = this.curve.getTangentAt(t).normalize();
-        
-        dummy.position.copy(pos);
-        dummy.lookAt(pos.clone().add(tangent));
-        dummy.scale.set(scale, scale, scale);
-        dummy.updateMatrix();
-        instancedTrack.setMatrixAt(i, dummy.matrix);
-    }
-    
-    this.mesh.add(instancedTrack);
-  }
 }
