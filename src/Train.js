@@ -7,7 +7,7 @@ export class Train {
     this.mesh = new THREE.Group();
 
     const loader = new GLTFLoader();
-    loader.load('/train-electric-subway-a.glb', (gltf) => {
+    loader.load('/train-electric-bullet-a.glb', (gltf) => {
       const model = gltf.scene;
       
       model.traverse((child) => {

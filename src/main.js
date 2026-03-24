@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { TrackManager } from './TrackManager.js';
 import { Train } from './Train.js';
 import { UI } from './ui.js';
+import { EnvironmentManager } from './EnvironmentManager.js';
 
 // Setup basic scene
 const canvas = document.querySelector('#game-canvas');
@@ -11,8 +12,8 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#1e293b');
-scene.fog = new THREE.FogExp2('#1e293b', 0.008);
+scene.background = new THREE.Color('#38bdf8'); // sky blue
+scene.fog = new THREE.FogExp2('#38bdf8', 0.006);
 
 // Camera
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
@@ -28,17 +29,18 @@ scene.add(dirLight);
 
 // Ground
 const groundGeo = new THREE.PlaneGeometry(2000, 2000);
-const groundMat = new THREE.MeshStandardMaterial({ color: '#0f172a' });
+const groundMat = new THREE.MeshStandardMaterial({ color: '#4ade80' }); // vibrant low-poly grass green
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
-const gridHelper = new THREE.GridHelper(1000, 100, 0x334155, 0x334155);
-scene.add(gridHelper);
-
 // Track & Train
 const trackManager = new TrackManager();
 scene.add(trackManager.mesh);
+
+// Environment Clutter
+const envManager = new EnvironmentManager(scene, trackManager);
+envManager.loadAndScatter();
 
 const train = new Train(trackManager);
 scene.add(train.mesh);
