@@ -3,19 +3,35 @@ export class UI {
     this.train = train;
     this.audioManager = audioManager;
     
-    this.throttleElement = document.getElementById('throttle');
+    this.gear = 0; // -5 (Max Brake) to 5 (Full Power)
     this.speedOdometer = document.getElementById('speedometer');
+    this.gearIndicator = document.getElementById('gear-indicator');
 
-    this.throttleElement.addEventListener('input', (e) => {
-      if (this.audioManager) this.audioManager.init(); 
-      this.train.setThrottle(parseFloat(e.target.value));
-    });
+    document.getElementById('btn-down').addEventListener('click', () => this.shiftGear(-1));
+    document.getElementById('btn-up').addEventListener('click', () => this.shiftGear(1));
+  }
 
-    // Reset throttle to zero if we double click the slider
-    this.throttleElement.addEventListener('dblclick', () => {
-      this.throttleElement.value = 0;
-      this.train.setThrottle(0);
-    });
+  shiftGear(delta) {
+    if (this.audioManager) this.audioManager.init();
+    
+    this.gear += delta;
+    if (this.gear > 5) this.gear = 5;
+    if (this.gear < -5) this.gear = -5;
+
+    // Visual formatting mapping F1-F5 and B1-B5
+    if (this.gear > 0) {
+      this.gearIndicator.innerText = `F${this.gear}`;
+      this.gearIndicator.style.color = '#4ade80'; // Green
+    } else if (this.gear < 0) {
+      this.gearIndicator.innerText = `B${Math.abs(this.gear)}`;
+      this.gearIndicator.style.color = '#f43f5e'; // Red
+    } else {
+      this.gearIndicator.innerText = '0';
+      this.gearIndicator.style.color = 'white';
+    }
+
+    // Convert -5..5 back to the -1.0..1.0 physics engine constraint natively
+    this.train.setThrottle(this.gear / 5.0);
   }
 
   update() {

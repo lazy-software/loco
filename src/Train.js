@@ -56,9 +56,9 @@ export class Train {
     // Engine characteristics (Heavier mass to account for 3 cars now)
     this.mass = 150000; // 150 tons
     this.throttle = 0;
-    this.maxTractiveEffort = 500000;
+    this.maxTractiveEffort = 250000; // Halved top speed limit
     this.baseResistance = 10000;
-    this.maxBrakeForce = 800000;
+    this.maxBrakeForce = 1200000; // Upgraded the brake pads!
   }
 
   // Helper for the Camera in main.js to lock onto the front car
@@ -73,18 +73,19 @@ export class Train {
   update(delta) {
     let force = 0;
 
-    if (this.throttle > 0) {
-      force = this.throttle * this.maxTractiveEffort;
-    } else if (this.throttle < 0) {
-      force = this.throttle * this.maxBrakeForce;
-      if (Math.abs(this.velocity) < 0.1) {
-        this.velocity = 0;
-        force = 0;
-      }
+    // Determine if the engine is powering or braking natively based on momentum direction
+    if (this.velocity > 0.5 && this.throttle < 0) {
+      force = this.throttle * this.maxBrakeForce; // Reverse throttle while moving forward = Brakes
+    } else if (this.velocity < -0.5 && this.throttle > 0) {
+      force = this.throttle * this.maxBrakeForce; // Forward throttle while reversing = Brakes
+    } else {
+      force = this.throttle * this.maxTractiveEffort; // Normal power application
     }
 
+    // Base mechanical resistance (friction)
     if (this.velocity > 0) {
       force -= this.baseResistance;
+      // Snap to stop if coasting at very low speeds
       if (this.throttle === 0 && force < 0 && this.velocity < 0.5) {
         this.velocity = 0;
         force = 0;
@@ -95,6 +96,9 @@ export class Train {
         this.velocity = 0;
         force = 0;
       }
+    } else {
+      // Prevent creeping from a dead stop if throttle is extremely low
+      if (Math.abs(force) < this.baseResistance) force = 0;
     }
 
     const acceleration = force / this.mass;
