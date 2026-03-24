@@ -67,18 +67,16 @@ function animate() {
   ui.update();
 
   // Chase Camera Update
-  // Position camera behind and above the train
-  const offset = new THREE.Vector3(0, 15, -30); // behind the train
-  offset.applyQuaternion(train.mesh.quaternion); // rotate relative to train heading
-  const desiredCameraPos = train.mesh.position.clone().add(offset);
+  // Use the Locomotive (the first car) as the camera target
+  const offset = new THREE.Vector3(0, 15, -30);
+  offset.applyQuaternion(train.locomotive.quaternion);
+  const desiredCameraPos = train.locomotive.position.clone().add(offset);
   
-  // Smoothly move camera
   camera.position.lerp(desiredCameraPos, 5 * delta);
   
-  // Look at a point slightly ahead of the train
   const lookOffset = new THREE.Vector3(0, 5, 20);
-  lookOffset.applyQuaternion(train.mesh.quaternion);
-  const lookTarget = train.mesh.position.clone().add(lookOffset);
+  lookOffset.applyQuaternion(train.locomotive.quaternion);
+  const lookTarget = train.locomotive.position.clone().add(lookOffset);
   
   camera.lookAt(lookTarget);
 

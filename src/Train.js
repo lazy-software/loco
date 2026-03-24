@@ -4,43 +4,65 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 export class Train {
   constructor(trackManager) {
     this.trackManager = trackManager;
+
+    // Container for the whole train collection
     this.mesh = new THREE.Group();
 
-    const loader = new GLTFLoader();
-    loader.load('/train-electric-bullet-a.glb', (gltf) => {
-      const model = gltf.scene;
-      
-      model.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-      
-      // Scale and lift slightly onto the rails
-      model.scale.set(1.9, 1.9, 1.9);
-      model.position.y = 0.2; 
-      
-      // Remove the previous 90-degree twist; Kenney's subway car aligns cleanly to 0 or 180 degrees.
-      // If it's driving backwards, we would just change this to Math.PI
-      model.rotation.y = 0;
+    this.cars = [];
+    const scale = 1.9;
+    const carModels = [
+      '/train-electric-bullet-a.glb',
+      '/train-electric-bullet-b.glb',
+      '/train-electric-bullet-c.glb'
+    ];
 
-      this.mesh.add(model);
+    // Distance physically spacing the cars out (adjust if they clip into each other)
+    // Reduced further to 4.5 to aggressively couple the Bullet Train models.
+    const carSpacing = 5;
+
+    const loader = new GLTFLoader();
+
+    carModels.forEach((path, index) => {
+      const carGroup = new THREE.Group();
+      this.mesh.add(carGroup);
+
+      loader.load(path, (gltf) => {
+        const model = gltf.scene;
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        model.scale.set(scale, scale, scale);
+        model.position.y = 0.2;
+        model.rotation.y = 0;
+        carGroup.add(model);
+      });
+
+      this.cars.push({
+        group: carGroup,
+        // The distance offset calculated into spline 't' parameter
+        tOffset: (index * carSpacing) / this.trackManager.curve.getLength()
+      });
     });
 
     // Physics state
-    this.t = 0; // position along the curve (0 to 1)
-    this.velocity = 0; // units per second
-    this.mass = 50000; // 50 tons
-    this.throttle = 0; // -1 (full brake/reverse) to 1 (full throttle)
-    
-    // Engine characteristics
-    this.maxTractiveEffort = 300000; // Newtons
-    this.baseResistance = 5000; // Friction
-    this.maxBrakeForce = 500000;
-
-    // Track length (approximate)
     this.trackLength = this.trackManager.curve.getLength();
+    this.t = 0; // position of the locomotive
+    this.velocity = 0;
+
+    // Engine characteristics (Heavier mass to account for 3 cars now)
+    this.mass = 150000; // 150 tons
+    this.throttle = 0;
+    this.maxTractiveEffort = 500000;
+    this.baseResistance = 10000;
+    this.maxBrakeForce = 800000;
+  }
+
+  // Helper for the Camera in main.js to lock onto the front car
+  get locomotive() {
+    return this.cars.length > 0 ? this.cars[0].group : this.mesh;
   }
 
   setThrottle(val) {
@@ -48,66 +70,63 @@ export class Train {
   }
 
   update(delta) {
-    // Calculate simple 1D physics
     let force = 0;
 
     if (this.throttle > 0) {
       force = this.throttle * this.maxTractiveEffort;
     } else if (this.throttle < 0) {
-      // Dynamic braking
-      force = this.throttle * this.maxBrakeForce; 
-      // If moving very slowly and braking, stop completely
+      force = this.throttle * this.maxBrakeForce;
       if (Math.abs(this.velocity) < 0.1) {
         this.velocity = 0;
         force = 0;
       }
     }
 
-    // Apply basic rolling resistance (always opposes velocity)
     if (this.velocity > 0) {
       force -= this.baseResistance;
       if (this.throttle === 0 && force < 0 && this.velocity < 0.5) {
-         this.velocity = 0;
-         force = 0;
+        this.velocity = 0;
+        force = 0;
       }
     } else if (this.velocity < 0) {
       force += this.baseResistance;
       if (this.throttle === 0 && force > 0 && this.velocity > -0.5) {
-         this.velocity = 0;
-         force = 0;
+        this.velocity = 0;
+        force = 0;
       }
     }
 
-    // F = ma -> a = F/m
     const acceleration = force / this.mass;
     this.velocity += acceleration * delta;
 
-    // Convert velocity (units/sec) to t change (t/sec)
     const tDelta = (this.velocity * delta) / this.trackLength;
     this.t += tDelta;
 
-    // Loop around the track
     if (this.t > 1) this.t -= 1;
     if (this.t < 0) this.t += 1;
-    // Bogie Math: Calculate front and rear wheel positions to accurately model curve overhang
-    // If the back wheels fall to the inside of the curve, it means this 'dt' value is too large 
-    // (the math chord is cutting too deep into the corner). We decreased it to 2.8.
-    // Feel free to tweak 2.8 until it permanently pins the wheels exactly over the rails!
-    const dt = 2.8 / this.trackLength; 
-    let frontT = this.t + dt;
-    let rearT = this.t - dt;
 
-    if (frontT > 1) frontT -= 1;
-    if (rearT < 0) rearT += 1;
+    // The dt for bogie math determining wheel overhang
+    const dt = 2.8 / this.trackLength;
 
-    const frontPos = this.trackManager.getPointAt(frontT);
-    const rearPos = this.trackManager.getPointAt(rearT);
+    // Update position universally for EVERY car in the train array
+    this.cars.forEach((car) => {
+      let carT = this.t - car.tOffset;
 
-    // The physical center of the train car is on the chord between the bogies
-    const centerPos = new THREE.Vector3().addVectors(frontPos, rearPos).multiplyScalar(0.5);
-    this.mesh.position.copy(centerPos);
+      while (carT > 1) carT -= 1;
+      while (carT < 0) carT += 1;
 
-    // Look directly from rear bogie to front bogie
-    this.mesh.lookAt(frontPos);
+      let frontT = carT + dt;
+      let rearT = carT - dt;
+
+      if (frontT > 1) frontT -= 1;
+      if (rearT < 0) rearT += 1;
+
+      const frontPos = this.trackManager.getPointAt(frontT);
+      const rearPos = this.trackManager.getPointAt(rearT);
+
+      const centerPos = new THREE.Vector3().addVectors(frontPos, rearPos).multiplyScalar(0.5);
+      car.group.position.copy(centerPos);
+      car.group.lookAt(frontPos);
+    });
   }
 }
