@@ -67,42 +67,51 @@ export class Train {
   }
 
   setThrottle(val) {
-    this.throttle = Math.max(-1, Math.min(1, val));
+    // Value is -1.0 to 1.0 (Target Speed Selector)
+    this.targetVelocity = Math.max(-1, Math.min(1, val)) * 120; // 120 m/s (~268 mph) limits
   }
 
   update(delta) {
+    this.targetVelocity = this.targetVelocity || 0;
+    const error = this.targetVelocity - this.velocity;
+    
     let force = 0;
-
-    // Determine if the engine is powering or braking natively based on momentum direction
-    if (this.velocity > 0.5 && this.throttle < 0) {
-      force = this.throttle * this.maxBrakeForce; // Reverse throttle while moving forward = Brakes
-    } else if (this.velocity < -0.5 && this.throttle > 0) {
-      force = this.throttle * this.maxBrakeForce; // Forward throttle while reversing = Brakes
-    } else {
-      force = this.throttle * this.maxTractiveEffort; // Normal power application
-    }
-
-    // Base mechanical resistance (friction)
-    if (this.velocity > 0) {
-      force -= this.baseResistance;
-      // Snap to stop if coasting at very low speeds
-      if (this.throttle === 0 && force < 0 && this.velocity < 0.5) {
-        this.velocity = 0;
-        force = 0;
+    
+    if (error > 0.2) {
+      // Need to move right/forward on number line
+      if (this.velocity < 0) {
+        // Moving backward, want to slow down or go forward -> Massive Brakes
+        force = this.maxBrakeForce;
+      } else {
+        // Moving forward, want to go faster -> Tractive Effort
+        force = this.maxTractiveEffort * Math.min(1.0, error / 10);
       }
-    } else if (this.velocity < 0) {
-      force += this.baseResistance;
-      if (this.throttle === 0 && force > 0 && this.velocity > -0.5) {
-        this.velocity = 0;
-        force = 0;
+    } else if (error < -0.2) {
+      // Need to move left/backward on number line
+      if (this.velocity > 0) {
+        // Moving forward, want to slow down or reverse -> Massive Brakes
+        force = -this.maxBrakeForce;
+      } else {
+        // Moving backward, want to go faster backward -> Tractive Effort in reverse
+        force = -this.maxTractiveEffort * Math.min(1.0, Math.abs(error) / 10);
       }
     } else {
-      // Prevent creeping from a dead stop if throttle is extremely low
-      if (Math.abs(force) < this.baseResistance) force = 0;
+      // Reached target exactly
+      this.velocity = this.targetVelocity;
+      force = 0;
     }
+
+    // Mechanical friction
+    if (this.velocity > 0.1) force -= this.baseResistance;
+    else if (this.velocity < -0.1) force += this.baseResistance;
 
     const acceleration = force / this.mass;
     this.velocity += acceleration * delta;
+
+    // Snap coasting perfectly to 0
+    if (this.targetVelocity === 0 && Math.abs(this.velocity) < 0.5) {
+      this.velocity = 0;
+    }
 
     // Track full life travel distance (independent of splines/loops) for accurate audio clacks
     this.odometer += Math.abs(this.velocity) * delta;

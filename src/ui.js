@@ -3,42 +3,43 @@ export class UI {
     this.train = train;
     this.audioManager = audioManager;
     
-    this.gear = 0; // -5 (Max Brake) to 5 (Full Power)
+    this.throttleElement = document.getElementById('throttle');
     this.speedOdometer = document.getElementById('speedometer');
-    this.gearIndicator = document.getElementById('gear-indicator');
 
-    document.getElementById('btn-down').addEventListener('click', () => this.shiftGear(-1));
-    document.getElementById('btn-up').addEventListener('click', () => this.shiftGear(1));
+    this.cameraMode = 0; // Default: Left Chase
+    this.camButtons = document.querySelectorAll('.cam-btn');
+    this.camButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        this.cameraMode = parseInt(e.target.getAttribute('data-cam'));
+        this.updateCameraUI();
+      });
+    });
+    this.updateCameraUI();
+
+    this.throttleElement.addEventListener('input', (e) => {
+      if (this.audioManager) this.audioManager.init(); 
+      this.train.setThrottle(parseFloat(e.target.value));
+    });
+
+    // Double-click thumb to snap to Zero (Middle) immediately
+    this.throttleElement.addEventListener('dblclick', () => {
+      this.throttleElement.value = 0;
+      this.train.setThrottle(0);
+    });
   }
 
-  shiftGear(delta) {
-    if (this.audioManager) this.audioManager.init();
-    
-    this.gear += delta;
-    if (this.gear > 5) this.gear = 5;
-    if (this.gear < -5) this.gear = -5;
-
-    // Visual formatting mapping F1-F5 and B1-B5
-    if (this.gear > 0) {
-      this.gearIndicator.innerText = `F${this.gear}`;
-      this.gearIndicator.style.color = '#4ade80'; // Green
-    } else if (this.gear < 0) {
-      this.gearIndicator.innerText = `B${Math.abs(this.gear)}`;
-      this.gearIndicator.style.color = '#f43f5e'; // Red
-    } else {
-      this.gearIndicator.innerText = '0';
-      this.gearIndicator.style.color = 'white';
-    }
-
-    // Convert -5..5 back to the -1.0..1.0 physics engine constraint natively
-    this.train.setThrottle(this.gear / 5.0);
+  updateCameraUI() {
+    this.camButtons.forEach(btn => {
+      if (parseInt(btn.getAttribute('data-cam')) === this.cameraMode) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
   }
 
   update() {
-    // Update speedometer text
-    // Convert units/sec to roughly mph for display (1 unit = 1 meter)
-    // 1 m/s = 2.23 mph
     const speedMilesPerHour = Math.abs(this.train.velocity * 2.23);
-    this.speedOdometer.innerText = `${Math.round(speedMilesPerHour)} mph`;
+    this.speedOdometer.innerText = Math.round(speedMilesPerHour).toString();
   }
 }
