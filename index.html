@@ -13,9 +13,11 @@
     <div id="ui-layer">
       <div id="speedometer">0 mph</div>
       <div class="controls">
-        <button id="btn-down" class="gear-btn">◀</button>
-        <div id="gear-indicator" class="gear-display">0</div>
-        <button id="btn-up" class="gear-btn">▶</button>
+        <label>F</label>
+        <div class="slider-container">
+          <input type="range" id="throttle" min="-1" max="1" step="0.2" value="0">
+        </div>
+        <label>R</label>
       </div>
     </div>
 

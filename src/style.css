@@ -18,7 +18,6 @@ html {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--text-color);
   overscroll-behavior: none;
-  /* Prevent pull-to-refresh on mobile */
 }
 
 #game-canvas {
@@ -39,59 +38,100 @@ html {
   height: 100%;
   z-index: 10;
   pointer-events: none;
-  /* Let clicks pass through to canvas by default */
 }
 
 .controls {
   position: absolute;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  pointer-events: auto;
-  background: rgba(255, 255, 255, 0.1);
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(15, 23, 42, 0.8);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  padding: 1rem 2rem;
+  padding: 1rem 0.5rem;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
-  flex-direction: row;
-  gap: 20px;
+  flex-direction: column;
   align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.controls label {
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.slider-container {
+  height: 210px; /* Collapsed bounding box pulls F/R right against the mechanical track ends */
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Bright yellow center-stop mark */
+.slider-container::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -10px;
+  width: 60px;
+  height: 4px;
+  background: #facc15;
+  border-radius: 2px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 0;
+  box-shadow: 0 0 8px rgba(250, 204, 21, 0.5);
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 250px;
+  height: 16px;
+  /* Paint mechanical notches into the track */
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.4) 0,
+    rgba(255, 255, 255, 0.4) 2px,
+    rgba(0, 0, 0, 0.6) 2px,
+    rgba(0, 0, 0, 0.6) calc(100% / 10)
+  );
+  border-radius: 8px;
+  outline: none;
+  transform: rotate(270deg);
+  margin: 0;
+  position: relative;
+  z-index: 1;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,1.0);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px; /* Short along the track */
+  height: 52px; /* Wide across the track (lever style) */
+  border-radius: 6px;
+  background: #38bdf8;
+  cursor: pointer;
+  border: 3px solid rgba(255,255,255,0.9);
+  box-shadow: -2px 0 10px rgba(0,0,0,0.6); /* Shadow falls 'down' visually due to rotation */
 }
 
 #speedometer {
   position: absolute;
   top: 2rem;
   right: 2rem;
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: bold;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   pointer-events: none;
-}
-
-.gear-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  font-size: 1.2rem;
-  font-family: inherit;
-  font-weight: bold;
-  padding: 0.8rem 1.2rem;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background 0.1s;
-  touch-action: manipulation;
-}
-
-.gear-btn:active {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.gear-display {
-  font-size: 1.5rem;
-  font-weight: bold;
-  font-variant-numeric: tabular-nums;
-  width: 2.5rem;
-  text-align: center;
+  transition: color 0.3s;
 }
