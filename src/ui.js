@@ -20,15 +20,6 @@ export class UI {
 
   update() {
     const speedMilesPerHour = Math.abs(this.train.velocity * 2.23);
-    this.speedOdometer.innerText = `${Math.round(speedMilesPerHour)} mph`;
-    
-    // Add visual styling to speedometer based on speed
-    if (Math.round(speedMilesPerHour) > 100) {
-       this.speedOdometer.style.color = '#f43f5e';
-    } else if (Math.round(speedMilesPerHour) > 0) {
-       this.speedOdometer.style.color = '#4ade80';
-    } else {
-       this.speedOdometer.style.color = 'white';
-    }
+    this.speedOdometer.innerText = Math.round(speedMilesPerHour).toString();
   }
 }
