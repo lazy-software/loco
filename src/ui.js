@@ -6,6 +6,16 @@ export class UI {
     this.throttleElement = document.getElementById('throttle');
     this.speedOdometer = document.getElementById('speedometer');
 
+    this.cameraMode = 0; // Default: Left Chase
+    this.camButtons = document.querySelectorAll('.cam-btn');
+    this.camButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        this.cameraMode = parseInt(e.target.getAttribute('data-cam'));
+        this.updateCameraUI();
+      });
+    });
+    this.updateCameraUI();
+
     this.throttleElement.addEventListener('input', (e) => {
       if (this.audioManager) this.audioManager.init(); 
       this.train.setThrottle(parseFloat(e.target.value));
@@ -15,6 +25,16 @@ export class UI {
     this.throttleElement.addEventListener('dblclick', () => {
       this.throttleElement.value = 0;
       this.train.setThrottle(0);
+    });
+  }
+
+  updateCameraUI() {
+    this.camButtons.forEach(btn => {
+      if (parseInt(btn.getAttribute('data-cam')) === this.cameraMode) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
     });
   }
 

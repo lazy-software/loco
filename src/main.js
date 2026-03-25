@@ -74,19 +74,32 @@ function animate() {
   ui.update();
   audioManager.update();
 
-  // Chase Camera Update
-  // Use the Locomotive (the first car) as the camera target
-  const offset = new THREE.Vector3(0, 15, -30);
+  // Cinematic Camera System
+  const cameraModes = [
+    { offset: new THREE.Vector3( 20, 12, -20), look: new THREE.Vector3( 0, 5, 10) },  // 1. Left Chase (Restored distance)
+    { offset: new THREE.Vector3(  6, 3.5, -5), look: new THREE.Vector3( 0, 2, -5) },  // 2. Left Platform (Tracking middle car)
+    { offset: new THREE.Vector3(  0, 4.5, 10), look: new THREE.Vector3( 0, 4.5, 60)}, // 3. Driver View
+    { offset: new THREE.Vector3( -6, 3.5, -5), look: new THREE.Vector3( 0, 2, -5) },  // 4. Right Platform (Tracking middle car)
+    { offset: new THREE.Vector3(-20, 12, -20), look: new THREE.Vector3( 0, 5, 10) }   // 5. Right Chase (Restored distance)
+  ];
+
+  const mode = cameraModes[ui.cameraMode || 0];
+
+  const offset = mode.offset.clone();
   offset.applyQuaternion(train.locomotive.quaternion);
   const desiredCameraPos = train.locomotive.position.clone().add(offset);
-  
   camera.position.lerp(desiredCameraPos, 5 * delta);
   
-  const lookOffset = new THREE.Vector3(0, 5, 20);
+  const lookOffset = mode.look.clone();
   lookOffset.applyQuaternion(train.locomotive.quaternion);
-  const lookTarget = train.locomotive.position.clone().add(lookOffset);
+  const desiredLookTarget = train.locomotive.position.clone().add(lookOffset);
   
-  camera.lookAt(lookTarget);
+  // Cinematic slow panning for the focal point too!
+  if (typeof window.currentLookTarget === 'undefined') {
+     window.currentLookTarget = train.locomotive.position.clone();
+  }
+  window.currentLookTarget.lerp(desiredLookTarget, 8 * delta);
+  camera.lookAt(window.currentLookTarget);
 
   renderer.render(scene, camera);
 }

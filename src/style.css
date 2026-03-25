@@ -144,3 +144,46 @@ input[type="range"]::-webkit-slider-thumb {
   pointer-events: none;
   transition: color 0.3s;
 }
+
+#camera-controls {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 0.5rem;
+  display: flex;
+  gap: 10px;
+  pointer-events: auto;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.cam-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 1.2rem;
+  font-family: inherit;
+  font-weight: bold;
+  width: auto;
+  padding: 0 12px;
+  height: 44px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  touch-action: manipulation;
+}
+
+.cam-btn:active {
+  transform: scale(0.95);
+}
+
+.cam-btn.active {
+  background: #38bdf8;
+  color: #000;
+  border-color: #fff;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+}
