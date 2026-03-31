@@ -1,7 +1,9 @@
 export class AudioManager {
-  constructor(train) {
+  constructor(train, stationManager) {
     this.train = train;
+    this.stationManager = stationManager;
     this.initialized = false;
+    this.wasStopped = true;
     this.audioCtx = null;
     this.masterGain = null;
     
@@ -103,6 +105,19 @@ export class AudioManager {
     }
 
     const currentSpeed = Math.abs(this.train.velocity);
+    const isStopped = currentSpeed === 0;
+
+    // Announce station perfectly upon halting
+    if (isStopped && !this.wasStopped && this.stationManager && window.speechSynthesis) {
+      const stationId = this.stationManager.getNearestStation(this.train.t);
+      if (stationId) {
+        const msg = new SpeechSynthesisUtterance(`This is the Long Island Railroad to Montauk. The next stop is Station ${stationId}.`);
+        msg.rate = 0.9;
+        msg.pitch = 1.05;
+        window.speechSynthesis.speak(msg);
+      }
+    }
+    this.wasStopped = isStopped;
     
     // Link pitch directly to the physics velocity!
     const targetFreq = 40 + (currentSpeed * 4);

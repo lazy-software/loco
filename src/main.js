@@ -46,7 +46,7 @@ stationManager.buildStations();
 const train = new Train(trackManager);
 scene.add(train.mesh);
 
-const audioManager = new AudioManager(train);
+const audioManager = new AudioManager(train, stationManager);
 
 // UI
 const ui = new UI(train, audioManager);

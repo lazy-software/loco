@@ -9,6 +9,17 @@ export class StationManager {
     this.scene.add(this.stations);
   }
 
+  getNearestStation(t) {
+    let stationIndex = 1;
+    for (let st = 0.08; st <= 0.92; st += 0.06) {
+      if (Math.abs(t - st) < 0.005) {
+        return stationIndex;
+      }
+      stationIndex++;
+    }
+    return null;
+  }
+
   buildStations() {
     // Spawn a station roughly every 0.08 normalized track length
     for (let t = 0.08; t <= 0.92; t += 0.06) {
