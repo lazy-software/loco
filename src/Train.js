@@ -39,7 +39,11 @@ export class Train {
 
     // Physics state
     this.trackLength = this.trackManager.curve.getLength();
-    this.t = 0; // position of the locomotive
+    
+    // Spawn exactly within the bounds of the first station platform (t = 0.08)
+    // We add an offset equal to half the length of the train so the 6th car doesn't hang off the back of the platform
+    const halfTrainOffset = (numCars * carSpacing) / 2.0 / this.trackLength;
+    this.t = 0.08 + halfTrainOffset; 
     this.velocity = 0;
     this.odometer = 0;
 

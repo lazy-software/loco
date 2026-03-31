@@ -6,15 +6,24 @@ export class UI {
     this.throttleElement = document.getElementById('throttle');
 
     this.cameraMode = 0; // Default: Left Chase
-    this.camButtons = document.querySelectorAll('.cam-btn');
-    this.camButtons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        if (e.target.hasAttribute('data-cam')) {
-          this.cameraMode = parseInt(e.target.getAttribute('data-cam'));
-          this.updateCameraUI();
-        }
+    const totalCams = 5;
+    
+    const prevBtn = document.getElementById('cam-prev');
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        this.cameraMode = (this.cameraMode - 1 + totalCams) % totalCams;
+        this.updateCameraUI();
       });
-    });
+    }
+
+    const nextBtn = document.getElementById('cam-next');
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        this.cameraMode = (this.cameraMode + 1) % totalCams;
+        this.updateCameraUI();
+      });
+    }
+
     this.updateCameraUI();
 
     this.throttleElement.addEventListener('input', (e) => {
@@ -50,12 +59,9 @@ export class UI {
   }
 
   updateCameraUI() {
-    this.camButtons.forEach(btn => {
-      if (parseInt(btn.getAttribute('data-cam')) === this.cameraMode) {
-        btn.classList.add('active');
-      } else {
-        btn.classList.remove('active');
-      }
-    });
+    const indicator = document.getElementById('cam-indicator');
+    if (indicator) {
+      indicator.title = `Camera ${this.cameraMode + 1}/5`;
+    }
   }
 }

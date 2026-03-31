@@ -11,12 +11,16 @@
     <canvas id="game-canvas"></canvas>
     
     <div id="ui-layer">
-      <div id="camera-controls">
-        <button class="cam-btn active" data-cam="0" title="Left Chase">🚁 L</button>
-        <button class="cam-btn" data-cam="1" title="Left Platform">🚉 L</button>
-        <button class="cam-btn" data-cam="2" title="Engine">🚂 F</button>
-        <button class="cam-btn" data-cam="3" title="Right Platform">🚉 R</button>
-        <button class="cam-btn" data-cam="4" title="Right Chase">🚁 R</button>
+      <div id="camera-controls" style="align-items: center;">
+        <button id="cam-prev" class="cam-btn" title="Previous Camera" style="display: flex; align-items: center; justify-content: center; width: 44px; padding: 0;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div id="cam-indicator" title="Camera 1/5" style="color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; box-sizing: border-box;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        </div>
+        <button id="cam-next" class="cam-btn" title="Next Camera" style="display: flex; align-items: center; justify-content: center; width: 44px; padding: 0;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
       </div>
 
       <div id="train-features">
@@ -25,11 +29,9 @@
         </button>
       </div>
       <div class="controls">
-        <label>F</label>
         <div class="slider-container">
           <input type="range" id="throttle" min="-1" max="1" step="0.2" value="0">
         </div>
-        <label>R</label>
       </div>
     </div>
 

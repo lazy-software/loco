@@ -71,11 +71,11 @@ function animate() {
 
   // Cinematic Camera System
   const cameraModes = [
-    { offset: new THREE.Vector3( 20, 12, -20), look: new THREE.Vector3( 0, 5, 10) },  // 1. Left Chase (Restored distance)
-    { offset: new THREE.Vector3(  6, 3.5, -5), look: new THREE.Vector3( 0, 2, -5) },  // 2. Left Platform (Tracking middle car)
-    { offset: new THREE.Vector3(  0, 4.5, 10), look: new THREE.Vector3( 0, 4.5, 60)}, // 3. Driver View
-    { offset: new THREE.Vector3( -6, 3.5, -5), look: new THREE.Vector3( 0, 2, -5) },  // 4. Right Platform (Tracking middle car)
-    { offset: new THREE.Vector3(-20, 12, -20), look: new THREE.Vector3( 0, 5, 10) }   // 5. Right Chase (Restored distance)
+    { offset: new THREE.Vector3( 60, 30, -80), look: new THREE.Vector3( 0,  5, -30) }, // 1. Wide Chase Left
+    { offset: new THREE.Vector3(  6, 3.5,  2), look: new THREE.Vector3( 0,  2,  0) },  // 2. Ground Front Left (Looking at train side)
+    { offset: new THREE.Vector3(  0, 1.5, 20), look: new THREE.Vector3( 0,  3,   0) }, // 3. Head-On Front
+    { offset: new THREE.Vector3( -6, 3.5,  2), look: new THREE.Vector3( 0,  2,  0) },  // 4. Ground Front Right
+    { offset: new THREE.Vector3(-60, 30, -80), look: new THREE.Vector3( 0,  5, -30) }  // 5. Wide Chase Right
   ];
 
   const mode = cameraModes[ui.cameraMode || 0];
