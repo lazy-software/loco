@@ -20,7 +20,7 @@ export class Train {
       const isFrontCab = i === 0;
       const isRearCab = i === numCars - 1;
       
-      const carMeshGroup = this.createLIRRM9(isFrontCab || isRearCab);
+      const carMeshGroup = this.createLIRRM9(isFrontCab || isRearCab, isRearCab);
       
       if (isRearCab) {
         carMeshGroup.rotation.y = Math.PI;
@@ -55,7 +55,7 @@ export class Train {
     this.maxBrakeForce = 1200000; // Upgraded the brake pads!
   }
 
-  createLIRRM9(isCab) {
+  createLIRRM9(isCab, isReversed = false) {
     const carGroup = new THREE.Group();
     
     // Core body
@@ -112,13 +112,25 @@ export class Train {
       doorGroup.add(doorMesh);
       doorGroup.add(winMesh);
       
+      // Continue the exterior livery stripes seamlessly across the sliding doors
+      const blueDoorStripeGeo = new THREE.BoxGeometry(0.12, 0.2, 1.2);
+      const blueDoorStripe = new THREE.Mesh(blueDoorStripeGeo, blueStripeMaterial);
+      blueDoorStripe.position.y = -0.8; // 0.9 body height - 1.7 door origin = -0.8
+      doorGroup.add(blueDoorStripe);
+
+      const yellowDoorStripeGeo = new THREE.BoxGeometry(0.12, 0.3, 1.2);
+      const yellowDoorStripe = new THREE.Mesh(yellowDoorStripeGeo, stripeMaterial);
+      yellowDoorStripe.position.y = -0.5; // 1.2 body height - 1.7 door origin = -0.5
+      doorGroup.add(yellowDoorStripe);
+      
       // Push door slightly further out to 1.06 to make room for the inner void
       const adjustedX = x > 0 ? 1.06 : -1.06;
       doorGroup.position.set(adjustedX, 1.7, z);
       carGroup.add(doorGroup);
 
-      // All single pocket doors slide in the same direction (towards the rear)
-      const slideDir = -1;
+      // All single pocket doors slide in the same direction globally
+      // The rear cab is physically rotated 180 degrees, so we must invert its local door slide direction!
+      const slideDir = isReversed ? 1 : -1;
       
       this.doors.push({
         mesh: doorGroup,
