@@ -22,6 +22,17 @@ export class AudioManager {
     
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     this.audioCtx = new AudioContext();
+
+    // iOS Safari creates the AudioContext in a 'suspended' state.
+    // We must resume() AND fire a silent 1-frame buffer immediately inside
+    // the synchronous user-gesture block to unlock the hardware audio pipeline.
+    this.audioCtx.resume().then(() => {
+      const silentBuf = this.audioCtx.createBuffer(1, 1, this.audioCtx.sampleRate);
+      const silentSrc = this.audioCtx.createBufferSource();
+      silentSrc.buffer = silentBuf;
+      silentSrc.connect(this.audioCtx.destination);
+      silentSrc.start(0);
+    });
     
     this.masterGain = this.audioCtx.createGain();
     this.masterGain.connect(this.audioCtx.destination);
@@ -58,10 +69,24 @@ export class AudioManager {
 
     this.initialized = true;
 
-    // Trigger initial announcement if the game starts at a station!
+    // Trigger initial announcement if the game starts at a station.
+    // On desktop the voices list is already populated synchronously.
+    // On iOS/Android it loads asynchronously, so we listen for 'voiceschanged'
+    // to guarantee the premium Siri/Samantha/Zira voice is actually available before speaking.
     if (this.train.velocity === 0 && this.stationManager) {
-      const stationData = this.stationManager.getNearestStationData(this.train.t);
-      if (stationData) this.announceStation(stationData);
+      const fireInitial = () => {
+        const stationData = this.stationManager.getNearestStationData(this.train.t);
+        if (stationData) this.announceStation(stationData);
+      };
+
+      if (window.speechSynthesis) {
+        if (window.speechSynthesis.getVoices().length > 0) {
+          fireInitial(); // Voices already loaded (Chrome desktop, Firefox)
+        } else {
+          // Safari / iOS / Android load voices asynchronously
+          window.speechSynthesis.addEventListener('voiceschanged', fireInitial, { once: true });
+        }
+      }
     }
   }
 
