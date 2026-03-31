@@ -35,13 +35,14 @@ export class UI {
         this.train.doorsState = this.train.doorsState === 1 ? 0 : 1;
         const isOpen = this.train.doorsState === 1;
         
-        const svgClosed = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 20V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v14"/><path d="M2 20h20"/><path d="M14 12v.01"/></svg>`;
-        const svgOpen = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M14 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M14 20v-4l9 3v-18l-9 3z"/><path d="M10 12v.01"/></svg>`;
+        const svgClosed = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16" /><path d="M12 3v18" /><path d="M2 21h20" /></svg>`;
+        const svgOpen = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16" /><path d="M7 3v18" /><path d="M17 3v18" /><path d="M2 21h20" /></svg>`;
         
         this.doorBtn.innerHTML = isOpen ? svgOpen : svgClosed;
         this.doorBtn.classList.toggle('active', isOpen);
         
         if (this.audioManager) {
+          this.audioManager.init(); // browser requires user gesture
           this.audioManager.playDoorChime(isOpen);
         }
       });
