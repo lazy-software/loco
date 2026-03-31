@@ -7,7 +7,7 @@ import { StationManager } from './StationManager.js';
 
 // Setup basic scene
 const canvas = document.querySelector('#game-canvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
@@ -15,7 +15,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color('#38bdf8'); // sky blue
 
 // Camera
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1.0, 10000);
 
 // Lights
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);

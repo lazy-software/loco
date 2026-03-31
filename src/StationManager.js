@@ -28,7 +28,7 @@ export class StationManager {
     const pushOut = perp.clone().multiplyScalar(sideMultiplier);
 
     const platformWidth = 5;
-    const platformLength = 50;
+    const platformLength = 90;
     const offsetDistance = 1.2 + (platformWidth / 2);
     const rawCenter = pos.clone().add(pushOut.multiplyScalar(offsetDistance));
     
@@ -68,7 +68,8 @@ export class StationManager {
     const pillarGeo = new THREE.BoxGeometry(0.3, 3.8, 0.3);
     const pillarMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.8, metalness: 0.3 }); // Matches roof
     
-    for (let z = -20; z <= 20; z += 10) {
+    // Spread pillars across the new 90m length
+    for (let z = -40; z <= 40; z += 10) {
         const pillar = new THREE.Mesh(pillarGeo, pillarMat);
         pillar.position.set(0, 1.9, z);
         pillar.castShadow = true;
@@ -79,7 +80,8 @@ export class StationManager {
     const signGeo = new THREE.BoxGeometry(0.05, 0.6, 2.5);
     const signMat = new THREE.MeshStandardMaterial({ color: 0x003399, roughness: 0.3 }); // LIRR Blue 
     
-    for (let z = -15; z <= 15; z += 30) {
+    // Spread signs evenly
+    for (let z = -30; z <= 30; z += 30) {
         const sign = new THREE.Mesh(signGeo, signMat);
         // Hanging from the roof, centered on columns
         sign.position.set(0, 3.2, z);
