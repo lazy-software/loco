@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 export class Train {
   constructor(trackManager) {
@@ -9,43 +8,29 @@ export class Train {
     this.mesh = new THREE.Group();
 
     this.cars = [];
-    const scale = 1.9;
-    const carModels = [
-      '/train-electric-bullet-a.glb',
-      '/train-electric-bullet-b.glb',
-      '/train-electric-bullet-c.glb'
-    ];
+    const numCars = 6;
+    const carSpacing = 12.5;
 
-    // Distance physically spacing the cars out (adjust if they clip into each other)
-    // Reduced further to 4.5 to aggressively couple the Bullet Train models.
-    const carSpacing = 5;
-
-    const loader = new GLTFLoader();
-
-    carModels.forEach((path, index) => {
-      const carGroup = new THREE.Group();
-      this.mesh.add(carGroup);
-
-      loader.load(path, (gltf) => {
-        const model = gltf.scene;
-        model.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
-        });
-        model.scale.set(scale, scale, scale);
-        model.position.y = 0.2;
-        model.rotation.y = 0;
-        carGroup.add(model);
-      });
+    for (let i = 0; i < numCars; i++) {
+      const isFrontCab = i === 0;
+      const isRearCab = i === numCars - 1;
+      
+      const carMeshGroup = this.createLIRRM9(isFrontCab || isRearCab);
+      
+      if (isRearCab) {
+        carMeshGroup.rotation.y = Math.PI;
+      }
+      
+      const containerGroup = new THREE.Group();
+      containerGroup.add(carMeshGroup);
+      
+      this.mesh.add(containerGroup);
 
       this.cars.push({
-        group: carGroup,
-        // The distance offset calculated into spline 't' parameter
-        tOffset: (index * carSpacing) / this.trackManager.curve.getLength()
+        group: containerGroup,
+        tOffset: (i * carSpacing) / this.trackManager.curve.getLength()
       });
-    });
+    }
 
     // Physics state
     this.trackLength = this.trackManager.curve.getLength();
@@ -53,12 +38,104 @@ export class Train {
     this.velocity = 0;
     this.odometer = 0;
 
-    // Engine characteristics (Heavier mass to account for 3 cars now)
-    this.mass = 150000; // 150 tons
+    // Engine characteristics (Heavier mass to account for 6 cars now)
+    this.mass = 300000; // 300 tons
     this.throttle = 0;
     this.maxTractiveEffort = 250000; // Halved top speed limit
     this.baseResistance = 10000;
     this.maxBrakeForce = 1200000; // Upgraded the brake pads!
+  }
+
+  createLIRRM9(isCab) {
+    const carGroup = new THREE.Group();
+    
+    // Core body
+    const bodyGeometry = new THREE.BoxGeometry(2.0, 2.8, 12.0);
+    const bodyMaterial = new THREE.MeshStandardMaterial({
+      color: 0xcccccc,
+      metalness: 0.6,
+      roughness: 0.4
+    });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    body.position.y = 1.8;
+    carGroup.add(body);
+
+    // Roof AC unit
+    const acGeometry = new THREE.BoxGeometry(1.4, 0.4, 8.0);
+    const acMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
+    const ac = new THREE.Mesh(acGeometry, acMaterial);
+    ac.position.set(0, 3.4, 0);
+    carGroup.add(ac);
+
+    // Yellow/Blue Stripes
+    const stripeGeometry = new THREE.BoxGeometry(2.02, 0.3, 12.02); 
+    const stripeMaterial = new THREE.MeshStandardMaterial({ color: 0xffcc00 }); // Yellow
+    const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
+    stripe.position.y = 1.2;
+    carGroup.add(stripe);
+
+    const blueStripeGeometry = new THREE.BoxGeometry(2.02, 0.2, 12.02);
+    const blueStripeMaterial = new THREE.MeshStandardMaterial({ color: 0x003399 }); // Blue
+    const blueStripe = new THREE.Mesh(blueStripeGeometry, blueStripeMaterial);
+    blueStripe.position.y = 0.9;
+    carGroup.add(blueStripe);
+
+    // Windows
+    const windowGeometry = new THREE.BoxGeometry(2.04, 0.8, 10.0);
+    const windowMaterial = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0.9 });
+    const windows = new THREE.Mesh(windowGeometry, windowMaterial);
+    windows.position.y = 2.0;
+    carGroup.add(windows);
+
+    if (isCab) {
+      // Cab front face (Yellow warning face)
+      const cabFaceGeo = new THREE.BoxGeometry(2.01, 2.81, 0.1);
+      const cabFaceMat = new THREE.MeshStandardMaterial({ color: 0xffcc00 });
+      const cabFace = new THREE.Mesh(cabFaceGeo, cabFaceMat);
+      cabFace.position.set(0, 1.8, 6.0);
+      carGroup.add(cabFace);
+
+      // Cab window (dark windshield)
+      const windShieldGeo = new THREE.BoxGeometry(1.8, 1.0, 0.2);
+      const windShieldMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+      const windShield = new THREE.Mesh(windShieldGeo, windShieldMat);
+      windShield.position.set(0, 2.2, 6.0);
+      carGroup.add(windShield);
+
+      // Headlights
+      const lightGeo = new THREE.BoxGeometry(0.4, 0.2, 0.3);
+      const lightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 2.0 });
+      
+      const light1 = new THREE.Mesh(lightGeo, lightMat);
+      light1.position.set(-0.7, 1.4, 6.0);
+      carGroup.add(light1);
+
+      const light2 = new THREE.Mesh(lightGeo, lightMat);
+      light2.position.set(0.7, 1.4, 6.0);
+      carGroup.add(light2);
+
+    }
+
+    // Wheels/Bogies
+    const bogieGeo = new THREE.BoxGeometry(1.6, 0.8, 2.0);
+    const bogieMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+    
+    const bogieFront = new THREE.Mesh(bogieGeo, bogieMat);
+    bogieFront.position.set(0, 0.4, 4.0);
+    carGroup.add(bogieFront);
+
+    const bogieRear = new THREE.Mesh(bogieGeo, bogieMat);
+    bogieRear.position.set(0, 0.4, -4.0);
+    carGroup.add(bogieRear);
+
+    carGroup.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+
+    return carGroup;
   }
 
   // Helper for the Camera in main.js to lock onto the front car
@@ -122,8 +199,8 @@ export class Train {
     if (this.t > 1) this.t -= 1;
     if (this.t < 0) this.t += 1;
 
-    // The dt for bogie math determining wheel overhang
-    const dt = 2.8 / this.trackLength;
+    // The dt for bogie math determining wheel overhang (half distance between bogies)
+    const dt = 4.0 / this.trackLength;
 
     // Update position universally for EVERY car in the train array
     this.cars.forEach((car) => {

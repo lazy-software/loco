@@ -4,7 +4,6 @@ export class UI {
     this.audioManager = audioManager;
     
     this.throttleElement = document.getElementById('throttle');
-    this.speedOdometer = document.getElementById('speedometer');
 
     this.cameraMode = 0; // Default: Left Chase
     this.camButtons = document.querySelectorAll('.cam-btn');
@@ -36,10 +35,5 @@ export class UI {
         btn.classList.remove('active');
       }
     });
-  }
-
-  update() {
-    const speedMilesPerHour = Math.abs(this.train.velocity * 2.23);
-    this.speedOdometer.innerText = Math.round(speedMilesPerHour).toString();
   }
 }

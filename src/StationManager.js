@@ -69,21 +69,33 @@ export class StationManager {
 
     // Roof
     const roofGeo = new THREE.BoxGeometry(platformWidth - 1, 0.4, platformLength - 4);
-    const roofMat = new THREE.MeshStandardMaterial({ color: '#f43f5e', roughness: 0.5 }); // Stylized Crimson
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.8 }); // Industrial Dark Green
     const roofMesh = new THREE.Mesh(roofGeo, roofMat);
     roofMesh.position.y = 3.8;
     roofMesh.castShadow = true;
     group.add(roofMesh);
 
-    // Load-bearing Pillars
-    const pillarGeo = new THREE.CylinderGeometry(0.2, 0.2, 3.8, 8);
-    const pillarMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8 });
+    // Load-bearing Pillars (Square metal posts for LIRR)
+    const pillarGeo = new THREE.BoxGeometry(0.3, 3.8, 0.3);
+    const pillarMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.8, metalness: 0.3 }); // Matches roof
     
     for (let z = -20; z <= 20; z += 10) {
         const pillar = new THREE.Mesh(pillarGeo, pillarMat);
         pillar.position.set(0, 1.9, z);
         pillar.castShadow = true;
         group.add(pillar);
+    }
+
+    // Classic LIRR Blue Station Signs
+    const signGeo = new THREE.BoxGeometry(0.05, 0.6, 2.5);
+    const signMat = new THREE.MeshStandardMaterial({ color: 0x003399, roughness: 0.3 }); // LIRR Blue 
+    
+    for (let z = -15; z <= 15; z += 30) {
+        const sign = new THREE.Mesh(signGeo, signMat);
+        // Hanging from the roof, centered on columns
+        sign.position.set(0, 3.2, z);
+        sign.castShadow = true;
+        group.add(sign);
     }
 
     this.stations.add(group);

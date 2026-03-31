@@ -125,26 +125,6 @@ input[type="range"]::-webkit-slider-thumb {
   box-shadow: -2px 0 10px rgba(0,0,0,0.6); /* Shadow falls 'down' visually due to rotation */
 }
 
-#speedometer {
-  position: absolute;
-  top: 2rem;
-  right: 2rem;
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 0.5rem 1rem;
-  min-width: 80px;
-  text-align: center;
-  font-size: 1.5rem;
-  font-variant-numeric: tabular-nums;
-  font-weight: bold;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
-  transition: color 0.3s;
-}
-
 #camera-controls {
   position: absolute;
   top: 2rem;

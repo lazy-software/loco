@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { TrackManager } from './TrackManager.js';
 import { Train } from './Train.js';
 import { UI } from './ui.js';
-import { EnvironmentManager } from './EnvironmentManager.js';
 import { AudioManager } from './AudioManager.js';
 import { StationManager } from './StationManager.js';
 
@@ -43,9 +42,7 @@ scene.add(trackManager.mesh);
 const stationManager = new StationManager(scene, trackManager);
 stationManager.buildStations();
 
-// Environment Clutter
-const envManager = new EnvironmentManager(scene, trackManager);
-envManager.loadAndScatter();
+// Environment Clutter Removed
 
 const train = new Train(trackManager);
 scene.add(train.mesh);
@@ -71,7 +68,6 @@ function animate() {
   const delta = Math.min(clock.getDelta(), 0.1); // cap delta
 
   train.update(delta);
-  ui.update();
   audioManager.update();
 
   // Cinematic Camera System
