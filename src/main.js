@@ -2,38 +2,52 @@ import * as THREE from 'three';
 import { TrackManager } from './TrackManager.js';
 import { Train } from './Train.js';
 import { UI } from './ui.js';
-import { EnvironmentManager } from './EnvironmentManager.js';
 import { AudioManager } from './AudioManager.js';
 import { StationManager } from './StationManager.js';
 
 // Setup basic scene
 const canvas = document.querySelector('#game-canvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#38bdf8'); // sky blue
-scene.fog = new THREE.FogExp2('#38bdf8', 0.006);
+
+// Low-poly Sun on the horizon
+const sunGeo = new THREE.SphereGeometry(600, 16, 16);
+const sunMat = new THREE.MeshBasicMaterial({ color: '#fef08a' }); // warm yellow
+const sun = new THREE.Mesh(sunGeo, sunMat);
+sun.position.set(3000, 1200, -8000); 
+scene.add(sun);
 
 // Camera
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1.0, 10000);
 
 // Lights
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
 scene.add(ambientLight);
 
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+// Hemisphere Light (Sky creates a blue tint on top of the train, ground creates a green tint on the bottom)
+const hemiLight = new THREE.HemisphereLight('#bae6fd', '#166534', 0.5);
+scene.add(hemiLight);
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
 dirLight.position.set(50, 100, 50);
 dirLight.castShadow = true;
 scene.add(dirLight);
 
 // Ground
-const groundGeo = new THREE.PlaneGeometry(2000, 2000);
-const groundMat = new THREE.MeshStandardMaterial({ color: '#4ade80' }); // vibrant low-poly grass green
+const groundGeo = new THREE.PlaneGeometry(20000, 20000);
+const groundMat = new THREE.MeshStandardMaterial({ color: '#4ade80' }); // vibrant grass green
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
+
+// Infinite Ground Grid (gives incredible perception of speed over flat geometry)
+const grid = new THREE.GridHelper(20000, 1000, '#22c55e', '#22c55e'); // darker green wireframe
+grid.position.y = 0.01; 
+scene.add(grid);
 
 // Track & Train
 const trackManager = new TrackManager();
@@ -43,14 +57,12 @@ scene.add(trackManager.mesh);
 const stationManager = new StationManager(scene, trackManager);
 stationManager.buildStations();
 
-// Environment Clutter
-const envManager = new EnvironmentManager(scene, trackManager);
-envManager.loadAndScatter();
+// Environment Clutter Removed
 
 const train = new Train(trackManager);
 scene.add(train.mesh);
 
-const audioManager = new AudioManager(train);
+const audioManager = new AudioManager(train, stationManager);
 
 // UI
 const ui = new UI(train, audioManager);
@@ -71,16 +83,15 @@ function animate() {
   const delta = Math.min(clock.getDelta(), 0.1); // cap delta
 
   train.update(delta);
-  ui.update();
   audioManager.update();
 
   // Cinematic Camera System
   const cameraModes = [
-    { offset: new THREE.Vector3( 20, 12, -20), look: new THREE.Vector3( 0, 5, 10) },  // 1. Left Chase (Restored distance)
-    { offset: new THREE.Vector3(  6, 3.5, -5), look: new THREE.Vector3( 0, 2, -5) },  // 2. Left Platform (Tracking middle car)
-    { offset: new THREE.Vector3(  0, 4.5, 10), look: new THREE.Vector3( 0, 4.5, 60)}, // 3. Driver View
-    { offset: new THREE.Vector3( -6, 3.5, -5), look: new THREE.Vector3( 0, 2, -5) },  // 4. Right Platform (Tracking middle car)
-    { offset: new THREE.Vector3(-20, 12, -20), look: new THREE.Vector3( 0, 5, 10) }   // 5. Right Chase (Restored distance)
+    { offset: new THREE.Vector3( 60, 30, -80), look: new THREE.Vector3( 0,  5, -30) }, // 1. Wide Chase Left
+    { offset: new THREE.Vector3(  6, 3.5,  2), look: new THREE.Vector3( 0,  2,  0) },  // 2. Ground Front Left (Looking at train side)
+    { offset: new THREE.Vector3(  0, 1.5, 20), look: new THREE.Vector3( 0,  3,   0) }, // 3. Head-On Front
+    { offset: new THREE.Vector3( -6, 3.5,  2), look: new THREE.Vector3( 0,  2,  0) },  // 4. Ground Front Right
+    { offset: new THREE.Vector3(-60, 30, -80), look: new THREE.Vector3( 0,  5, -30) }  // 5. Wide Chase Right
   ];
 
   const mode = cameraModes[ui.cameraMode || 0];

@@ -4,44 +4,16 @@ export class TrackManager {
   constructor() {
     this.mesh = new THREE.Group();
     
-    // Custom geometric curve to absolutely guarantee flawless tangency and zero track wiggle
-    class CapsuleCurve extends THREE.Curve {
-      constructor(straightLength = 200, radius = 20) {
-        super();
-        this.sl = straightLength;
-        this.r = radius;
-        this.arcL = Math.PI * this.r;
-        this.circumference = this.sl * 2 + this.arcL * 2;
-      }
-      
-      getPoint(t, optionalTarget = new THREE.Vector3()) {
-        let d = (t % 1.0) * this.circumference;
-        if (d < 0) d += this.circumference;
-        const sl2 = this.sl / 2;
-        
-        if (d <= sl2) return optionalTarget.set(this.r, 0, d);
-        
-        let distIn = d - sl2;
-        if (distIn <= this.arcL) {
-          const angle = (distIn / this.arcL) * Math.PI;
-          return optionalTarget.set(Math.cos(angle) * this.r, 0, sl2 + Math.sin(angle) * this.r);
-        }
-        
-        distIn -= this.arcL;
-        if (distIn <= this.sl) return optionalTarget.set(-this.r, 0, sl2 - distIn);
-        
-        distIn -= this.sl;
-        if (distIn <= this.arcL) {
-          const angle = Math.PI + (distIn / this.arcL) * Math.PI;
-          return optionalTarget.set(Math.cos(angle) * this.r, 0, -sl2 + Math.sin(angle) * this.r);
-        }
-        
-        distIn -= this.arcL;
-        return optionalTarget.set(this.r, 0, -sl2 + distIn);
-      }
-    }
+    const points = [
+      new THREE.Vector3(0, 0, -5000),
+      new THREE.Vector3(0, 0, -3000),
+      new THREE.Vector3(150, 0, -1000), // Minor bend
+      new THREE.Vector3(150, 0, 1000),
+      new THREE.Vector3(0, 0, 3000),    // Bend back
+      new THREE.Vector3(0, 0, 5000)
+    ];
 
-    this.curve = new CapsuleCurve(200, 20);
+    this.curve = new THREE.CatmullRomCurve3(points, false); // Open curve
     
     // Visualize the track
     this.createTrackMesh();
@@ -72,14 +44,16 @@ export class TrackManager {
 
     const railMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3, metalness: 0.9 });
     
+    const segments = 1500; // Longer track needs more segments to prevent chunky rendering
+    
     // Left Rail
-    const leftGeo = new THREE.TubeGeometry(leftCurve, 400, 0.1, 8, true);
+    const leftGeo = new THREE.TubeGeometry(leftCurve, segments, 0.1, 8, false);
     const leftMesh = new THREE.Mesh(leftGeo, railMat);
     leftMesh.position.y = 0.2;
     this.mesh.add(leftMesh);
 
     // Right Rail
-    const rightGeo = new THREE.TubeGeometry(rightCurve, 400, 0.1, 8, true);
+    const rightGeo = new THREE.TubeGeometry(rightCurve, segments, 0.1, 8, false);
     const rightMesh = new THREE.Mesh(rightGeo, railMat);
     rightMesh.position.y = 0.2;
     this.mesh.add(rightMesh);
@@ -107,9 +81,8 @@ export class TrackManager {
     }
     this.mesh.add(instancedTies);
 
-    // 3. Ballast Base (Gravel bed via perfectly smooth flattened TubeGeometry)
-    // We flatten it on the Y axis relative to the world, which works flawlessly for rails on flat ground!
-    const ballastGeo = new THREE.TubeGeometry(this.curve, 400, 1.8, 12, true);
+    // 3. Ballast Base
+    const ballastGeo = new THREE.TubeGeometry(this.curve, segments, 1.8, 12, false);
     const ballastMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 1.0, metalness: 0.0 });
     const ballastMesh = new THREE.Mesh(ballastGeo, ballastMat);
     ballastMesh.scale.y = 0.05; 

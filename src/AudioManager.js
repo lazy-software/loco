@@ -1,7 +1,9 @@
 export class AudioManager {
-  constructor(train) {
+  constructor(train, stationManager) {
     this.train = train;
+    this.stationManager = stationManager;
     this.initialized = false;
+    this.wasStopped = true;
     this.audioCtx = null;
     this.masterGain = null;
     
@@ -47,6 +49,34 @@ export class AudioManager {
     this.noiseBuffer = buffer;
 
     this.initialized = true;
+
+    // Trigger initial announcement if the game starts at a station!
+    if (this.train.velocity === 0 && this.stationManager) {
+      const stationData = this.stationManager.getNearestStationData(this.train.t);
+      if (stationData) this.announceStation(stationData);
+    }
+  }
+
+  announceStation(stationData) {
+    if (!window.speechSynthesis) return;
+    
+    const msg = new SpeechSynthesisUtterance(`This station is ${stationData.current}. This is the train to ${stationData.end}. The next stop is ${stationData.next}.`);
+    
+    // Find a high-quality human-sounding voice instead of the default robot
+    const voices = window.speechSynthesis.getVoices();
+    const bestVoice = voices.find(v => 
+      v.name.includes('Google US English') || 
+      v.name.includes('Samantha') || // macOS
+      v.name.includes('Zira') ||     // Windows
+      v.name.includes('Serena') || 
+      (v.lang === 'en-US' && v.name.includes('Female'))
+    );
+    
+    if (bestVoice) msg.voice = bestVoice;
+    
+    msg.rate = 0.85; // Slight slow down for transit announcer cadence
+    msg.pitch = 1.1;
+    window.speechSynthesis.speak(msg);
   }
 
   playClack() {
@@ -71,6 +101,29 @@ export class AudioManager {
     
     source.start();
   }
+  playDoorChime(isOpen) {
+    if (!this.initialized) return;
+
+    const freq = isOpen ? 880 : 660; // 880Hz (A5) for open, 660Hz (E5) for close
+    
+    const osc = this.audioCtx.createOscillator();
+    osc.type = 'sine'; // pure, clean tone for a chime
+
+    const gainNode = this.audioCtx.createGain();
+    
+    // Attack and decay
+    gainNode.gain.setValueAtTime(0, this.audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.5, this.audioCtx.currentTime + 0.05); // quick fade in
+    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 1.2); // smooth ring-out fade
+
+    osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+
+    osc.connect(gainNode);
+    gainNode.connect(this.masterGain);
+
+    osc.start();
+    osc.stop(this.audioCtx.currentTime + 1.5);
+  }
 
   update() {
     if (!this.initialized) return;
@@ -80,6 +133,14 @@ export class AudioManager {
     }
 
     const currentSpeed = Math.abs(this.train.velocity);
+    const isStopped = currentSpeed === 0;
+
+    // Announce station perfectly upon halting
+    if (isStopped && !this.wasStopped && this.stationManager) {
+      const stationData = this.stationManager.getNearestStationData(this.train.t);
+      if (stationData) this.announceStation(stationData);
+    }
+    this.wasStopped = isStopped;
     
     // Link pitch directly to the physics velocity!
     const targetFreq = 40 + (currentSpeed * 4);
