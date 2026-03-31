@@ -14,24 +14,40 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#38bdf8'); // sky blue
 
+// Low-poly Sun on the horizon
+const sunGeo = new THREE.SphereGeometry(600, 16, 16);
+const sunMat = new THREE.MeshBasicMaterial({ color: '#fef08a' }); // warm yellow
+const sun = new THREE.Mesh(sunGeo, sunMat);
+sun.position.set(3000, 1200, -8000); 
+scene.add(sun);
+
 // Camera
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1.0, 10000);
 
 // Lights
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
 scene.add(ambientLight);
 
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+// Hemisphere Light (Sky creates a blue tint on top of the train, ground creates a green tint on the bottom)
+const hemiLight = new THREE.HemisphereLight('#bae6fd', '#166534', 0.5);
+scene.add(hemiLight);
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
 dirLight.position.set(50, 100, 50);
 dirLight.castShadow = true;
 scene.add(dirLight);
 
 // Ground
 const groundGeo = new THREE.PlaneGeometry(20000, 20000);
-const groundMat = new THREE.MeshStandardMaterial({ color: '#4ade80' }); // vibrant low-poly grass green
+const groundMat = new THREE.MeshStandardMaterial({ color: '#4ade80' }); // vibrant grass green
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
+
+// Infinite Ground Grid (gives incredible perception of speed over flat geometry)
+const grid = new THREE.GridHelper(20000, 1000, '#22c55e', '#22c55e'); // darker green wireframe
+grid.position.y = 0.01; 
+scene.add(grid);
 
 // Track & Train
 const trackManager = new TrackManager();

@@ -67,37 +67,43 @@ export class StationManager {
     lineMesh.position.x = lineX;
     group.add(lineMesh);
 
-    // Roof
-    const roofGeo = new THREE.BoxGeometry(platformWidth - 1, 0.4, platformLength - 4);
-    const roofMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.8 }); // Industrial Dark Green
-    const roofMesh = new THREE.Mesh(roofGeo, roofMat);
-    roofMesh.position.y = 3.8;
-    roofMesh.castShadow = true;
-    group.add(roofMesh);
-
-    // Load-bearing Pillars (Square metal posts for LIRR)
-    const pillarGeo = new THREE.BoxGeometry(0.3, 3.8, 0.3);
-    const pillarMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.8, metalness: 0.3 }); // Matches roof
+    // Rear Safety Fence
+    const fenceHeight = 1.0;
+    const fenceGeo = new THREE.BoxGeometry(0.1, fenceHeight, platformLength);
+    const fenceMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9, metalness: 0.4 });
+    const fenceMesh = new THREE.Mesh(fenceGeo, fenceMat);
+    fenceMesh.position.y = 0.8 + (fenceHeight / 2); // 0.8 is platform slab Y-top (0.4 y + 0.4 half-height)
     
-    // Spread pillars across the new 90m length
-    for (let z = -40; z <= 40; z += 10) {
-        const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-        pillar.position.set(0, 1.9, z);
-        pillar.castShadow = true;
-        group.add(pillar);
-    }
+    // Put fence on the far edge, opposite the yellow line
+    const backEdgeX = trackLocalPos.x > 0 ? -(platformWidth/2 - 0.1) : (platformWidth/2 - 0.1);
+    fenceMesh.position.x = backEdgeX;
+    fenceMesh.castShadow = true;
+    group.add(fenceMesh);
 
-    // Classic LIRR Blue Station Signs
-    const signGeo = new THREE.BoxGeometry(0.05, 0.6, 2.5);
+    // Classic LIRR Blue Station Signs on independent posts
+    const signGeo = new THREE.BoxGeometry(0.1, 0.8, 3.0);
     const signMat = new THREE.MeshStandardMaterial({ color: 0x003399, roughness: 0.3 }); // LIRR Blue 
     
-    // Spread signs evenly
+    const postGeo = new THREE.BoxGeometry(0.15, 2.5, 0.15);
+    const postMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.8 });
+
+    // Spread 3 signs across the 90m length
     for (let z = -30; z <= 30; z += 30) {
+        const signGroup = new THREE.Group();
+
+        const post = new THREE.Mesh(postGeo, postMat);
+        post.position.y = 0.8 + 1.25; // 0.8 platform + 1.25 half-height
+        post.castShadow = true;
+
         const sign = new THREE.Mesh(signGeo, signMat);
-        // Hanging from the roof, centered on columns
-        sign.position.set(0, 3.2, z);
+        sign.position.y = 0.8 + 2.1; // Mount it near the top of the post
         sign.castShadow = true;
-        group.add(sign);
+
+        signGroup.add(post);
+        signGroup.add(sign);
+        
+        signGroup.position.set(0, 0, z); // Center of the platform width
+        group.add(signGroup);
     }
 
     this.stations.add(group);

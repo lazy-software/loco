@@ -112,8 +112,21 @@ export class AudioManager {
       const stationId = this.stationManager.getNearestStation(this.train.t);
       if (stationId) {
         const msg = new SpeechSynthesisUtterance(`This is the Long Island Railroad to Montauk. The next stop is Station ${stationId}.`);
-        msg.rate = 0.9;
-        msg.pitch = 1.05;
+        
+        // Find a high-quality human-sounding voice instead of the default robot
+        const voices = window.speechSynthesis.getVoices();
+        const bestVoice = voices.find(v => 
+          v.name.includes('Google US English') || 
+          v.name.includes('Samantha') || // macOS
+          v.name.includes('Zira') ||     // Windows
+          v.name.includes('Serena') || 
+          (v.lang === 'en-US' && v.name.includes('Female'))
+        );
+        
+        if (bestVoice) msg.voice = bestVoice;
+        
+        msg.rate = 0.85; // Slight slow down for transit announcer cadence
+        msg.pitch = 1.1;
         window.speechSynthesis.speak(msg);
       }
     }
