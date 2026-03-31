@@ -71,6 +71,29 @@ export class AudioManager {
     
     source.start();
   }
+  playDoorChime(isOpen) {
+    if (!this.initialized) return;
+
+    const freq = isOpen ? 880 : 660; // 880Hz (A5) for open, 660Hz (E5) for close
+    
+    const osc = this.audioCtx.createOscillator();
+    osc.type = 'sine'; // pure, clean tone for a chime
+
+    const gainNode = this.audioCtx.createGain();
+    
+    // Attack and decay
+    gainNode.gain.setValueAtTime(0, this.audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.5, this.audioCtx.currentTime + 0.05); // quick fade in
+    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 1.2); // smooth ring-out fade
+
+    osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+
+    osc.connect(gainNode);
+    gainNode.connect(this.masterGain);
+
+    osc.start();
+    osc.stop(this.audioCtx.currentTime + 1.5);
+  }
 
   update() {
     if (!this.initialized) return;

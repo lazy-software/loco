@@ -11,6 +11,11 @@ export class Train {
     const numCars = 6;
     const carSpacing = 12.5;
 
+    // Door system initialization MUST happen before createLIRRM9 is called
+    this.doorsState = 0; // 0 = closed, 1 = open
+    this.doorProgress = 0; // 0.0 to 1.0 (smooth tween)
+    this.doors = []; // { mesh, closedZ, openZ }
+
     for (let i = 0; i < numCars; i++) {
       const isFrontCab = i === 0;
       const isRearCab = i === numCars - 1;
@@ -86,6 +91,53 @@ export class Train {
     const windows = new THREE.Mesh(windowGeometry, windowMaterial);
     windows.position.y = 2.0;
     carGroup.add(windows);
+
+    // Functional sliding doors
+    const addDoor = (x, z) => {
+      const doorGroup = new THREE.Group();
+      
+      const doorGeo = new THREE.BoxGeometry(0.1, 1.8, 1.2);
+      const doorMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8 });
+      const doorMesh = new THREE.Mesh(doorGeo, doorMat);
+      
+      const winGeo = new THREE.BoxGeometry(0.12, 0.6, 0.8);
+      const winMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+      const winMesh = new THREE.Mesh(winGeo, winMat);
+      winMesh.position.y = 0.3; 
+      
+      doorGroup.add(doorMesh);
+      doorGroup.add(winMesh);
+      
+      // Push door slightly further out to 1.06 to make room for the inner void
+      const adjustedX = x > 0 ? 1.06 : -1.06;
+      doorGroup.position.set(adjustedX, 1.7, z);
+      carGroup.add(doorGroup);
+
+      // All single pocket doors slide in the same direction (towards the rear)
+      const slideDir = -1;
+      
+      this.doors.push({
+        mesh: doorGroup,
+        closedZ: z,
+        openZ: z + (1.1 * slideDir)
+      });
+
+      // Hollow Interior Illusion (Black Void)
+      const voidGeo = new THREE.BoxGeometry(0.04, 1.78, 1.18);
+      const voidMat = new THREE.MeshBasicMaterial({ color: 0x000000 }); // Perfectly black without shading
+      const voidMesh = new THREE.Mesh(voidGeo, voidMat);
+      
+      // Place it right at 1.0, protruding slightly to clip flawlessly over the main silver body
+      const voidX = x > 0 ? 1.01 : -1.01;
+      voidMesh.position.set(voidX, 1.7, z);
+      
+      carGroup.add(voidMesh);
+    };
+
+    addDoor( 1.05,  3.0);
+    addDoor(-1.05,  3.0);
+    addDoor( 1.05, -3.0);
+    addDoor(-1.05, -3.0);
 
     if (isCab) {
       // Cab front face (Yellow warning face)
@@ -195,6 +247,21 @@ export class Train {
 
     const tDelta = (this.velocity * delta) / this.trackLength;
     this.t += tDelta;
+
+    // Door animations
+    if (this.doorProgress !== this.doorsState) {
+      const speed = 1.2; // roughly 0.8s to open
+      if (this.doorProgress < this.doorsState) {
+        this.doorProgress = Math.min(1.0, this.doorProgress + delta * speed);
+      } else {
+        this.doorProgress = Math.max(0.0, this.doorProgress - delta * speed);
+      }
+      
+      // Update local position of all doors relative to the train cars
+      this.doors.forEach(door => {
+        door.mesh.position.z = door.closedZ + (door.openZ - door.closedZ) * this.doorProgress;
+      });
+    }
 
     // The dt for bogie math determining wheel overhang (half distance between bogies)
     const dt = 4.0 / this.trackLength;

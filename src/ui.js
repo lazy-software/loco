@@ -9,8 +9,10 @@ export class UI {
     this.camButtons = document.querySelectorAll('.cam-btn');
     this.camButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
-        this.cameraMode = parseInt(e.target.getAttribute('data-cam'));
-        this.updateCameraUI();
+        if (e.target.hasAttribute('data-cam')) {
+          this.cameraMode = parseInt(e.target.getAttribute('data-cam'));
+          this.updateCameraUI();
+        }
       });
     });
     this.updateCameraUI();
@@ -25,6 +27,21 @@ export class UI {
       this.throttleElement.value = 0;
       this.train.setThrottle(0);
     });
+
+    this.doorBtn = document.getElementById('door-btn');
+    if (this.doorBtn) {
+      this.doorBtn.addEventListener('click', () => {
+        // Toggle 0 / 1
+        this.train.doorsState = this.train.doorsState === 1 ? 0 : 1;
+        const isOpen = this.train.doorsState === 1;
+        this.doorBtn.innerText = isOpen ? '🚪 Close Doors' : '🚪 Open Doors';
+        this.doorBtn.classList.toggle('active', isOpen);
+        
+        if (this.audioManager) {
+          this.audioManager.playDoorChime(isOpen);
+        }
+      });
+    }
   }
 
   updateCameraUI() {
