@@ -10,33 +10,22 @@ export class StationManager {
   }
 
   buildStations() {
-    let rightT = -1;
-    let leftT = -1;
-
-    for (let t = 0; t <= 1.0; t += 0.005) {
-      const pt = this.trackManager.getPointAt(t);
-      if (Math.abs(pt.z) < 2) {
-        if (pt.x > 0 && rightT === -1) rightT = t;
-        if (pt.x < 0 && leftT === -1) leftT = t;
-      }
+    // Spawn a station roughly every 0.08 normalized track length
+    for (let t = 0.08; t <= 0.92; t += 0.06) {
+      // Alternate sides left and right
+      const side = Math.random() > 0.5 ? 1 : -1;
+      this.createStation(t, side);
     }
-
-    if (rightT !== -1) this.createStation(rightT);
-    if (leftT !== -1) this.createStation(leftT);
   }
 
-  createStation(t) {
+  createStation(t, sideMultiplier) {
     const pos = this.trackManager.getPointAt(t);
     const tangent = this.trackManager.getTangentAt(t).normalize();
     const up = new THREE.Vector3(0, 1, 0);
     
     const perp = new THREE.Vector3().crossVectors(tangent, up).normalize();
     
-    const centerDirection = pos.clone().normalize();
-    let pushOut = perp.clone();
-    if (pushOut.dot(centerDirection) < 0) {
-        pushOut.negate();
-    }
+    const pushOut = perp.clone().multiplyScalar(sideMultiplier);
 
     const platformWidth = 5;
     const platformLength = 50;

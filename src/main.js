@@ -13,7 +13,6 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#38bdf8'); // sky blue
-scene.fog = new THREE.FogExp2('#38bdf8', 0.006);
 
 // Camera
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
@@ -28,7 +27,7 @@ dirLight.castShadow = true;
 scene.add(dirLight);
 
 // Ground
-const groundGeo = new THREE.PlaneGeometry(2000, 2000);
+const groundGeo = new THREE.PlaneGeometry(20000, 20000);
 const groundMat = new THREE.MeshStandardMaterial({ color: '#4ade80' }); // vibrant low-poly grass green
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI / 2;

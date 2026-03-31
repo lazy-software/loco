@@ -196,24 +196,33 @@ export class Train {
     const tDelta = (this.velocity * delta) / this.trackLength;
     this.t += tDelta;
 
-    if (this.t > 1) this.t -= 1;
-    if (this.t < 0) this.t += 1;
-
     // The dt for bogie math determining wheel overhang (half distance between bogies)
     const dt = 4.0 / this.trackLength;
+
+    const maxT = 1.0 - dt * 1.2 - Math.abs(this.cars[0].tOffset); 
+    const minT = dt * 1.2 + Math.abs(this.cars[this.cars.length - 1].tOffset);
+
+    if (this.t > maxT) {
+      this.t = maxT;
+      if (this.velocity > 0) this.velocity = 0;
+    }
+    if (this.t < minT) {
+      this.t = minT;
+      if (this.velocity < 0) this.velocity = 0;
+    }
 
     // Update position universally for EVERY car in the train array
     this.cars.forEach((car) => {
       let carT = this.t - car.tOffset;
 
-      while (carT > 1) carT -= 1;
-      while (carT < 0) carT += 1;
+      if (carT > 1.0) carT = 1.0;
+      if (carT < 0.0) carT = 0.0;
 
       let frontT = carT + dt;
       let rearT = carT - dt;
 
-      if (frontT > 1) frontT -= 1;
-      if (rearT < 0) rearT += 1;
+      if (frontT > 1.0) frontT = 1.0;
+      if (rearT < 0.0) rearT = 0.0;
 
       const frontPos = this.trackManager.getPointAt(frontT);
       const rearPos = this.trackManager.getPointAt(rearT);
