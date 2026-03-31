@@ -48,6 +48,14 @@ export class AudioManager {
     }
     this.noiseBuffer = buffer;
 
+    // Prime iOS Safari SpeechSynthesis Engine synchronously during the touch event
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel(); // Clear any Safari ghost queues
+      const unlockMsg = new SpeechSynthesisUtterance("");
+      unlockMsg.volume = 0;
+      window.speechSynthesis.speak(unlockMsg);
+    }
+
     this.initialized = true;
 
     // Trigger initial announcement if the game starts at a station!
@@ -59,6 +67,9 @@ export class AudioManager {
 
   announceStation(stationData) {
     if (!window.speechSynthesis) return;
+    
+    // Clear iOS WebKit queue aggressively before pushing asynchronous physics announcements
+    window.speechSynthesis.cancel();
     
     const msg = new SpeechSynthesisUtterance(`This station is ${stationData.current}. This is the train to ${stationData.end}. The next stop is ${stationData.next}.`);
     
