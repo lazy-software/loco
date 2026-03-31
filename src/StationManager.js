@@ -5,15 +5,27 @@ export class StationManager {
     this.scene = scene;
     this.trackManager = trackManager;
     
+    // Classic Commuter Branches
+    this.lirrStations = [
+      "PENN STATION", "WOODSIDE", "JAMAICA", "MINEOLA", 
+      "HICKSVILLE", "FARMINGDALE", "WYANDANCH", "DEER PARK", 
+      "BRENTWOOD", "CENTRAL ISLIP", "RONKONKOMA", "MEDFORD",
+      "YAPHANK", "RIVERHEAD", "MATTITUCK", "MONTAUK"
+    ];
+
     this.stations = new THREE.Group();
     this.scene.add(this.stations);
   }
 
-  getNearestStation(t) {
-    let stationIndex = 1;
+  getNearestStationData(t) {
+    let stationIndex = 0;
     for (let st = 0.08; st <= 0.92; st += 0.06) {
       if (Math.abs(t - st) < 0.005) {
-        return stationIndex;
+        return {
+          current: this.lirrStations[stationIndex % this.lirrStations.length],
+          next: this.lirrStations[(stationIndex + 1) % this.lirrStations.length],
+          end: "MONTAUK" // Terminating station for eastbound travel
+        };
       }
       stationIndex++;
     }
@@ -21,15 +33,16 @@ export class StationManager {
   }
 
   buildStations() {
-    // Spawn a station roughly every 0.08 normalized track length
+    let stationIndex = 0;
     for (let t = 0.08; t <= 0.92; t += 0.06) {
-      // Alternate sides left and right
       const side = Math.random() > 0.5 ? 1 : -1;
-      this.createStation(t, side);
+      const name = this.lirrStations[stationIndex % this.lirrStations.length];
+      this.createStation(t, side, name);
+      stationIndex++;
     }
   }
 
-  createStation(t, sideMultiplier) {
+  createStation(t, sideMultiplier, stationName = "LIRR STATION") {
     const pos = this.trackManager.getPointAt(t);
     const tangent = this.trackManager.getTangentAt(t).normalize();
     const up = new THREE.Vector3(0, 1, 0);
@@ -80,9 +93,41 @@ export class StationManager {
     fenceMesh.castShadow = true;
     group.add(fenceMesh);
 
+    // Procedural Canvas Generation for LIRR Signs
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    
+    // Background Navy Blue
+    ctx.fillStyle = '#003399';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Thin White Border
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 12;
+    ctx.strokeRect(12, 12, canvas.width - 24, canvas.height - 24);
+    
+    // Crisp White Text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 110px "Helvetica Neue", Helvetica, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(stationName, canvas.width / 2, canvas.height / 2 + 10);
+    
+    const signTexture = new THREE.CanvasTexture(canvas);
+    
     // Classic LIRR Blue Station Signs on independent posts
     const signGeo = new THREE.BoxGeometry(0.1, 0.8, 3.0);
-    const signMat = new THREE.MeshStandardMaterial({ color: 0x003399, roughness: 0.3 }); // LIRR Blue 
+    
+    // Face 0: Right, 1: Left -> the wide parts of the box
+    const edgeMat = new THREE.MeshStandardMaterial({ color: 0x003399, roughness: 0.3 }); // pure blue
+    const faceMat = new THREE.MeshStandardMaterial({ 
+        color: 0xffffff,
+        map: signTexture, 
+        roughness: 0.3 
+    });
+    const materials = [faceMat, faceMat, edgeMat, edgeMat, edgeMat, edgeMat];
     
     const postGeo = new THREE.BoxGeometry(0.15, 2.5, 0.15);
     const postMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.8 });
@@ -95,7 +140,7 @@ export class StationManager {
         post.position.y = 0.8 + 1.25; // 0.8 platform + 1.25 half-height
         post.castShadow = true;
 
-        const sign = new THREE.Mesh(signGeo, signMat);
+        const sign = new THREE.Mesh(signGeo, materials);
         sign.position.y = 0.8 + 2.1; // Mount it near the top of the post
         sign.castShadow = true;
 

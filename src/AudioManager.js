@@ -49,6 +49,34 @@ export class AudioManager {
     this.noiseBuffer = buffer;
 
     this.initialized = true;
+
+    // Trigger initial announcement if the game starts at a station!
+    if (this.train.velocity === 0 && this.stationManager) {
+      const stationData = this.stationManager.getNearestStationData(this.train.t);
+      if (stationData) this.announceStation(stationData);
+    }
+  }
+
+  announceStation(stationData) {
+    if (!window.speechSynthesis) return;
+    
+    const msg = new SpeechSynthesisUtterance(`This station is ${stationData.current}. This is the train to ${stationData.end}. The next stop is ${stationData.next}.`);
+    
+    // Find a high-quality human-sounding voice instead of the default robot
+    const voices = window.speechSynthesis.getVoices();
+    const bestVoice = voices.find(v => 
+      v.name.includes('Google US English') || 
+      v.name.includes('Samantha') || // macOS
+      v.name.includes('Zira') ||     // Windows
+      v.name.includes('Serena') || 
+      (v.lang === 'en-US' && v.name.includes('Female'))
+    );
+    
+    if (bestVoice) msg.voice = bestVoice;
+    
+    msg.rate = 0.85; // Slight slow down for transit announcer cadence
+    msg.pitch = 1.1;
+    window.speechSynthesis.speak(msg);
   }
 
   playClack() {
@@ -108,27 +136,9 @@ export class AudioManager {
     const isStopped = currentSpeed === 0;
 
     // Announce station perfectly upon halting
-    if (isStopped && !this.wasStopped && this.stationManager && window.speechSynthesis) {
-      const stationId = this.stationManager.getNearestStation(this.train.t);
-      if (stationId) {
-        const msg = new SpeechSynthesisUtterance(`This is the Long Island Railroad to Montauk. The next stop is Station ${stationId}.`);
-        
-        // Find a high-quality human-sounding voice instead of the default robot
-        const voices = window.speechSynthesis.getVoices();
-        const bestVoice = voices.find(v => 
-          v.name.includes('Google US English') || 
-          v.name.includes('Samantha') || // macOS
-          v.name.includes('Zira') ||     // Windows
-          v.name.includes('Serena') || 
-          (v.lang === 'en-US' && v.name.includes('Female'))
-        );
-        
-        if (bestVoice) msg.voice = bestVoice;
-        
-        msg.rate = 0.85; // Slight slow down for transit announcer cadence
-        msg.pitch = 1.1;
-        window.speechSynthesis.speak(msg);
-      }
+    if (isStopped && !this.wasStopped && this.stationManager) {
+      const stationData = this.stationManager.getNearestStationData(this.train.t);
+      if (stationData) this.announceStation(stationData);
     }
     this.wasStopped = isStopped;
     
