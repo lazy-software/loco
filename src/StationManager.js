@@ -7,10 +7,11 @@ export class StationManager {
     
     // Classic Commuter Branches
     this.lirrStations = [
-      "PENN STATION", "WOODSIDE", "JAMAICA", "MINEOLA", 
-      "HICKSVILLE", "FARMINGDALE", "WYANDANCH", "DEER PARK", 
-      "BRENTWOOD", "CENTRAL ISLIP", "RONKONKOMA", "MEDFORD",
-      "YAPHANK", "RIVERHEAD", "MATTITUCK", "MONTAUK"
+      "BABYLON", "LINDENHURST", "COPIAGUE", "AMITYVILLE", 
+      "MASSAPEQUA PARK", "MASSAPEQUA", "SEAFORD", "WANTAGH", 
+      "BELLMORE", "MERRICK", "FREEPORT", "BALDWIN", 
+      "ROCKVILLE CENTRE", "LYNBROOK", "ST. ALBANS", "JAMAICA", 
+      "KEW GARDENS", "FOREST HILLS", "WOODSIDE", "PENN STATION"
     ];
 
     this.stations = new THREE.Group();
@@ -18,27 +19,36 @@ export class StationManager {
   }
 
   getNearestStationData(t) {
-    let stationIndex = 0;
-    for (let st = 0.08; st <= 0.92; st += 0.06) {
-      if (Math.abs(t - st) < 0.005) {
+    const numStations = this.lirrStations.length;
+    const startT = 0.08;
+    const endT = 0.92;
+    const stepT = (endT - startT) / (numStations - 1);
+
+    for (let i = 0; i < numStations; i++) {
+      const st = startT + i * stepT;
+      // Increased tolerance window (0.015 ~ 150m) to accurately detect the center mass of longer 10-car trains
+      if (Math.abs(t - st) < 0.015) {
         return {
-          current: this.lirrStations[stationIndex % this.lirrStations.length],
-          next: this.lirrStations[(stationIndex + 1) % this.lirrStations.length],
-          end: "MONTAUK" // Terminating station for eastbound travel
+          current: this.lirrStations[i],
+          next: this.lirrStations[(i + 1) % numStations],
+          end: "PENN STATION" // Terminating station
         };
       }
-      stationIndex++;
     }
     return null;
   }
 
   buildStations() {
-    let stationIndex = 0;
-    for (let t = 0.08; t <= 0.92; t += 0.06) {
+    const numStations = this.lirrStations.length;
+    const startT = 0.08;
+    const endT = 0.92;
+    const stepT = (endT - startT) / (numStations - 1);
+
+    for (let i = 0; i < numStations; i++) {
+      const t = startT + i * stepT;
       const side = Math.random() > 0.5 ? 1 : -1;
-      const name = this.lirrStations[stationIndex % this.lirrStations.length];
+      const name = this.lirrStations[i];
       this.createStation(t, side, name);
-      stationIndex++;
     }
   }
 
@@ -52,7 +62,7 @@ export class StationManager {
     const pushOut = perp.clone().multiplyScalar(sideMultiplier);
 
     const platformWidth = 5;
-    const platformLength = 90;
+    const platformLength = 140;
     const offsetDistance = 1.2 + (platformWidth / 2);
     const rawCenter = pos.clone().add(pushOut.multiplyScalar(offsetDistance));
     
@@ -132,24 +142,22 @@ export class StationManager {
     const postGeo = new THREE.BoxGeometry(0.15, 2.5, 0.15);
     const postMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.8 });
 
-    // Spread 3 signs across the 90m length
-    for (let z = -30; z <= 30; z += 30) {
-        const signGroup = new THREE.Group();
+    // Put 1 sign in the middle of the 140m length
+    const signGroup = new THREE.Group();
 
-        const post = new THREE.Mesh(postGeo, postMat);
-        post.position.y = 0.8 + 1.25; // 0.8 platform + 1.25 half-height
-        post.castShadow = true;
+    const post = new THREE.Mesh(postGeo, postMat);
+    post.position.y = 0.8 + 1.25; // 0.8 platform + 1.25 half-height
+    post.castShadow = true;
 
-        const sign = new THREE.Mesh(signGeo, materials);
-        sign.position.y = 0.8 + 2.1; // Mount it near the top of the post
-        sign.castShadow = true;
+    const sign = new THREE.Mesh(signGeo, materials);
+    sign.position.y = 0.8 + 2.1; // Mount it near the top of the post
+    sign.castShadow = true;
 
-        signGroup.add(post);
-        signGroup.add(sign);
+    signGroup.add(post);
+    signGroup.add(sign);
         
-        signGroup.position.set(0, 0, z); // Center of the platform width
-        group.add(signGroup);
-    }
+    signGroup.position.set(0, 0, 0); // Center of the platform width
+    group.add(signGroup);
 
     this.stations.add(group);
   }
