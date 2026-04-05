@@ -24,15 +24,9 @@ export class AudioManager {
     this.audioCtx = new AudioContext();
 
     // iOS Safari creates the AudioContext in a 'suspended' state.
-    // We must resume() AND fire a silent 1-frame buffer immediately inside
-    // the synchronous user-gesture block to unlock the hardware audio pipeline.
-    this.audioCtx.resume().then(() => {
-      const silentBuf = this.audioCtx.createBuffer(1, 1, this.audioCtx.sampleRate);
-      const silentSrc = this.audioCtx.createBufferSource();
-      silentSrc.buffer = silentBuf;
-      silentSrc.connect(this.audioCtx.destination);
-      silentSrc.start(0);
-    });
+    // We MUST resume synchronously inside the user gesture,
+    // then play a silent buffer to force the hardware pipeline open.
+    this.ensureAudioResumed();
     
     this.masterGain = this.audioCtx.createGain();
     this.masterGain.connect(this.audioCtx.destination);
@@ -61,18 +55,24 @@ export class AudioManager {
 
     // Prime iOS Safari SpeechSynthesis Engine synchronously during the touch event
     if (window.speechSynthesis) {
-      window.speechSynthesis.cancel(); // Clear any Safari ghost queues
+      window.speechSynthesis.cancel();
       const unlockMsg = new SpeechSynthesisUtterance("");
       unlockMsg.volume = 0;
       window.speechSynthesis.speak(unlockMsg);
     }
+
+    // iOS Safari can randomly re-suspend the AudioContext when the screen dims,
+    // the tab backgrounds, or after periods of silence. We re-unlock on ANY touch.
+    const retouchUnlock = () => this.ensureAudioResumed();
+    document.addEventListener('touchstart', retouchUnlock, { passive: true });
+    document.addEventListener('touchend', retouchUnlock, { passive: true });
 
     this.initialized = true;
 
     // Trigger initial announcement if the game starts at a station.
     // On desktop the voices list is already populated synchronously.
     // On iOS/Android it loads asynchronously, so we listen for 'voiceschanged'
-    // to guarantee the premium Siri/Samantha/Zira voice is actually available before speaking.
+    // to guarantee the premium Siri/Samantha/Zira voice is actually available.
     if (this.train.velocity === 0 && this.stationManager) {
       const fireInitial = () => {
         const stationData = this.stationManager.getNearestStationData(this.train.t);
@@ -83,17 +83,35 @@ export class AudioManager {
         if (window.speechSynthesis.getVoices().length > 0) {
           fireInitial(); // Voices already loaded (Chrome desktop, Firefox)
         } else {
-          // Safari / iOS / Android load voices asynchronously
           window.speechSynthesis.addEventListener('voiceschanged', fireInitial, { once: true });
         }
       }
     }
   }
 
+  // Central method to force the AudioContext out of suspended state.
+  // Plays a silent 1-sample buffer to kick the iOS hardware pipeline.
+  ensureAudioResumed() {
+    if (!this.audioCtx) return;
+    if (this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume();
+    }
+    // Always fire a silent buffer — on iOS this is what truly wakes the speaker
+    try {
+      const silentBuf = this.audioCtx.createBuffer(1, 1, this.audioCtx.sampleRate);
+      const silentSrc = this.audioCtx.createBufferSource();
+      silentSrc.buffer = silentBuf;
+      silentSrc.connect(this.audioCtx.destination);
+      silentSrc.start(0);
+    } catch (e) {
+      // Swallow errors if context is in a broken state
+    }
+  }
+
   announceStation(stationData) {
     if (!window.speechSynthesis) return;
     
-    // Clear iOS WebKit queue aggressively before pushing asynchronous physics announcements
+    // Clear iOS WebKit queue aggressively before pushing new announcements
     window.speechSynthesis.cancel();
     
     const msg = new SpeechSynthesisUtterance(`This station is ${stationData.current}. This is the train to ${stationData.end}. The next stop is ${stationData.next}.`);
@@ -102,7 +120,7 @@ export class AudioManager {
     const voices = window.speechSynthesis.getVoices();
     const bestVoice = voices.find(v => 
       v.name.includes('Google US English') || 
-      v.name.includes('Samantha') || // macOS
+      v.name.includes('Samantha') || // macOS / iOS
       v.name.includes('Zira') ||     // Windows
       v.name.includes('Serena') || 
       (v.lang === 'en-US' && v.name.includes('Female'))
@@ -110,13 +128,14 @@ export class AudioManager {
     
     if (bestVoice) msg.voice = bestVoice;
     
-    msg.rate = 0.85; // Slight slow down for transit announcer cadence
+    msg.rate = 0.85;
     msg.pitch = 1.1;
     window.speechSynthesis.speak(msg);
   }
 
   playClack() {
     if (!this.initialized) return;
+    this.ensureAudioResumed();
     
     const source = this.audioCtx.createBufferSource();
     source.buffer = this.noiseBuffer;
@@ -137,8 +156,10 @@ export class AudioManager {
     
     source.start();
   }
+
   playDoorChime(isOpen) {
     if (!this.initialized) return;
+    this.ensureAudioResumed();
 
     const freq = isOpen ? 880 : 660; // 880Hz (A5) for open, 660Hz (E5) for close
     
@@ -161,12 +182,41 @@ export class AudioManager {
     osc.stop(this.audioCtx.currentTime + 1.5);
   }
 
+  playHorn(isBlowing) {
+    if (!this.initialized) return;
+    this.ensureAudioResumed();
+
+    if (isBlowing) {
+      if (this.hornOscillators) return;
+      
+      this.hornGain = this.audioCtx.createGain();
+      this.hornGain.gain.setValueAtTime(0, this.audioCtx.currentTime);
+      this.hornGain.gain.linearRampToValueAtTime(0.4, this.audioCtx.currentTime + 0.05);
+      this.hornGain.connect(this.masterGain);
+
+      // Classic dissonant horn chord
+      const freqs = [311.13, 370.0, 415.3, 466.16]; 
+      this.hornOscillators = freqs.map(freq => {
+        const osc = this.audioCtx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.value = freq;
+        osc.connect(this.hornGain);
+        osc.start();
+        return osc;
+      });
+    } else {
+      if (!this.hornOscillators) return;
+      
+      this.hornGain.gain.linearRampToValueAtTime(0, this.audioCtx.currentTime + 0.3);
+      this.hornOscillators.forEach(osc => osc.stop(this.audioCtx.currentTime + 0.3));
+      this.hornOscillators = null;
+    }
+  }
+
   update() {
     if (!this.initialized) return;
 
-    if (this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume();
-    }
+    this.ensureAudioResumed();
 
     const currentSpeed = Math.abs(this.train.velocity);
     const isStopped = currentSpeed === 0;

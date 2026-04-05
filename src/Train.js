@@ -8,7 +8,7 @@ export class Train {
     this.mesh = new THREE.Group();
 
     this.cars = [];
-    const numCars = 6;
+    const numCars = 10;
     const carSpacing = 12.5;
 
     // Door system initialization MUST happen before createLIRRM9 is called
@@ -47,8 +47,8 @@ export class Train {
     this.velocity = 0;
     this.odometer = 0;
 
-    // Engine characteristics (Heavier mass to account for 6 cars now)
-    this.mass = 300000; // 300 tons
+    // Engine characteristics (Heavier mass to account for 10 cars now)
+    this.mass = 500000; // 500 tons
     this.throttle = 0;
     this.maxTractiveEffort = 250000; // Halved top speed limit
     this.baseResistance = 10000;

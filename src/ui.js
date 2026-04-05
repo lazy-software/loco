@@ -56,6 +56,31 @@ export class UI {
         }
       });
     }
+
+    this.hornBtn = document.getElementById('horn-btn');
+    if (this.hornBtn) {
+      const startHorn = () => {
+        if (this.audioManager) {
+          this.audioManager.init();
+          this.audioManager.playHorn(true);
+        }
+        this.hornBtn.classList.add('active');
+      };
+      
+      const stopHorn = () => {
+        if (this.audioManager) {
+          this.audioManager.playHorn(false);
+        }
+        this.hornBtn.classList.remove('active');
+      };
+
+      this.hornBtn.addEventListener('mousedown', startHorn);
+      this.hornBtn.addEventListener('mouseup', stopHorn);
+      this.hornBtn.addEventListener('mouseleave', stopHorn);
+      this.hornBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startHorn(); }, { passive: false });
+      this.hornBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopHorn(); }, { passive: false });
+      this.hornBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); stopHorn(); }, { passive: false });
+    }
   }
 
   updateCameraUI() {
